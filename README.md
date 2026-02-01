@@ -66,14 +66,29 @@ This repository contains:
 - Minimal environments with sparse rewards
 - Sequential and parallel exploration modes
 - Aggregation strategies for scout experience
-- Visualizations that reconstruct “many eyes” exploration
+- Visualizations that reconstruct "many eyes" exploration
 - Reproducible experiments demonstrating improved learning outcomes
 
 The same code paths can run:
 - sequentially on a laptop, or
 - in parallel on larger systems
 
-The results should be comparable—the difference is only wall-clock time.
+The results should be comparable - the difference is only wall-clock time.
+
+---
+
+## Documentation
+
+- [Architecture](docs/architecture.md) - System components and data flow
+- [PRD](docs/prd.md) - Product requirements and goals
+- [Design](docs/design.md) - Implementation details and design decisions
+- [Development Plan](docs/plan.md) - Phased development roadmap
+- [Status](docs/status.md) - Current progress and next steps
+
+Additional documentation:
+- [AI Agent Instructions](docs/ai_agent_instructions.md) - Guidelines for AI coding agents
+- [Development Process](docs/process.md) - TDD workflow and quality gates
+- [Tools](docs/tools.md) - Recommended development tools
 
 ---
 
