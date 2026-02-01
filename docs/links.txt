@@ -1,0 +1,70 @@
+# Related Papers and References
+
+This project is inspired by recent research on structured exploration, sparse-reward learning, and multi-policy approaches.  
+The links below point to the primary papers that motivated the **many-eyes learning** framing.
+
+---
+
+## Exploring Reasoning Reward Models for Agents
+
+**Paper:**  
+Exploring Reasoning Reward Model for Agents  
+Kaixuan Fan, Kaituo Feng, Manyuan Zhang, Tianshuo Peng, Zhixun Li,  
+Yilei Jiang, Shawn Chen, Peng Pei, Xunliang Cai, Xiangyu Yue  
+
+**Affiliations:**  
+MMLab, CUHK · Meituan · SEEM, CUHK
+
+- arXiv abstract:  
+  https://arxiv.org/abs/2601.22154
+- arXiv HTML:  
+  https://arxiv.org/html/2601.22154
+- arXiv PDF:  
+  https://arxiv.org/pdf/2601.22154
+
+**Code repository:**  
+- https://github.com/kxfan2002/Reagent
+
+**Relevance:**  
+This work explores how richer, structured feedback during training can improve learning outcomes.  
+While focused on reasoning reward models, it aligns with the broader idea that learning fails when feedback is too sparse or poorly structured.
+
+---
+
+## Intrinsic Reward Policy Optimization for Sparse-Reward Environments (IRPO)
+
+**Paper:**  
+Intrinsic Reward Policy Optimization for Sparse-Reward Environments  
+Minjae Cho, Huy T. Tran  
+
+**Affiliation:**  
+The Grainger College of Engineering, University of Illinois Urbana–Champaign
+
+- arXiv abstract:  
+  https://arxiv.org/abs/2601.21391
+- arXiv HTML:  
+  https://arxiv.org/html/2601.21391
+- arXiv PDF:  
+  https://arxiv.org/pdf/2601.21391
+
+**Code repository:**  
+- https://github.com/Mgineer117/IRPO
+
+**Relevance:**  
+IRPO formalizes how multiple exploratory policies can improve learning in sparse-reward settings by routing information from exploration back to a base learner.  
+This directly motivates the *many-eyes* idea: better learning comes from better exploration, not faster execution.
+
+---
+
+## Notes
+
+- This repository does **not** attempt to exactly reproduce any of the above methods.
+- The goal is to **demonstrate the core insight** shared across this line of work:
+  
+  > Sparse rewards are an information problem.  
+  > Structured exploration provides better learning signal.
+
+- All demos in this project prioritize clarity, reproducibility, and conceptual understanding over benchmark performance.
+
+---
+
