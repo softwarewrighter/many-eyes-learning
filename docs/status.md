@@ -18,13 +18,13 @@ Phase 1 complete, Phase 2 partially complete. The system now has:
 | Phase | Status | Progress |
 |-------|--------|----------|
 | Phase 1: Foundation | Complete | 100% |
-| Phase 2: Diversity | In Progress | 60% |
+| Phase 2: Diversity | In Progress | 90% |
 | Phase 3: Parallel | Not Started | 0% |
 | Phase 4: Polish | Not Started | 0% |
 
 ## Latest Experimental Results
 
-On 7x7 sparse grid with 75 training episodes:
+### Many-Eyes Scaling (7x7 grid, 75 episodes)
 
 | Method | Success Rate |
 |--------|-------------|
@@ -32,6 +32,17 @@ On 7x7 sparse grid with 75 training episodes:
 | Single scout | 0% |
 | Many eyes (3) | 40% |
 | Many eyes (5) | 60% |
+
+### Diversity Experiment (7x7 grid, 100 episodes, 5 scouts each)
+
+| Configuration | Success Rate |
+|--------------|-------------|
+| Random baseline | 7% |
+| Homogeneous random | 20% |
+| Homogeneous epsilon | 40% |
+| Diverse mix | 40% |
+
+**Finding**: Strategy quality matters more than diversity in simple environments.
 
 See [results.md](results.md) for full details and reproduction instructions.
 
@@ -47,10 +58,12 @@ See [results.md](results.md) for full details and reproduction instructions.
 - [x] CLI demo with interactive visualization
 - [x] Fixed DQN learning (step penalty for gradient signal)
 - [x] Fair comparison (equal total environment steps)
+- [x] CuriousScout (count-based novelty exploration)
+- [x] OptimisticScout (optimistic initialization)
+- [x] Diversity experiment (homogeneous vs diverse scouts)
+- [x] Diversity results and plots
 
 ### Not Yet Started
-- [ ] CuriousScout (count-based exploration)
-- [ ] OptimisticScout
 - [ ] Weighted aggregation strategies
 - [ ] Web UI demo
 
@@ -62,6 +75,7 @@ None currently.
 
 | Date | Activity |
 |------|----------|
+| 2026-02-03 | Added CuriousScout, OptimisticScout, diversity experiment |
 | 2026-02-03 | Phase 2: Added evaluation, experiments, CLI demo, plots, results.md |
 | 2026-02-03 | Fixed DQN learning with step penalty |
 | 2026-02-03 | Phase 1 complete: core system, tests, demo |
@@ -71,9 +85,9 @@ None currently.
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Tests | 42 passing | - |
+| Tests | 56 passing | - |
 | Demo environments | 1 (SparseGridWorld) | 1+ |
-| Scout strategies | 2 (Random, EpsilonGreedy) | 4+ |
+| Scout strategies | 4 (Random, EpsilonGreedy, Curious, Optimistic) | 4+ |
 | Reproducible results | Yes | Yes |
 | CLI visualization | Yes | Yes |
 

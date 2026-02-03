@@ -169,12 +169,69 @@ All experiment data is saved as JSON for reproducibility:
 }
 ```
 
+## Diversity Experiment
+
+A second experiment tests whether **diversity of exploration strategies** matters, not just the number of scouts.
+
+### Setup
+
+- **Grid**: 7x7 sparse grid
+- **Training episodes**: 100
+- **All configurations use 5 scouts** (fair comparison)
+- **Seeds**: 5 independent runs
+
+### Configurations Tested
+
+1. **Homogeneous Random**: 5 identical random scouts
+2. **Homogeneous Epsilon**: 5 identical epsilon-greedy scouts (ε=0.2)
+3. **Diverse Mix**: Random + 2 epsilon-greedy (ε=0.1, 0.3) + CuriousScout + OptimisticScout
+
+### Diversity Results
+
+| Configuration | Success Rate | Std Dev |
+|--------------|--------------|---------|
+| Random baseline | 7.0% | - |
+| Homogeneous random | 20.0% | 40.0% |
+| Homogeneous epsilon | 40.0% | 49.0% |
+| Diverse mix | 40.0% | 49.0% |
+
+### Plots
+
+![Diversity Comparison](../experiments/results/plots/diversity_comparison.png)
+
+![Diversity Learning Curves](../experiments/results/plots/diversity_learning_curves.png)
+
+### Analysis
+
+**Key Finding**: In this simple environment, **exploration strategy quality matters more than diversity**.
+
+- Epsilon-greedy scouts (homogeneous or mixed) outperform pure random scouts
+- Diverse mix performs the same as homogeneous epsilon-greedy
+- This suggests that in simple environments, having *any* good exploration strategy is sufficient
+- Diversity may provide more benefit in complex environments with multiple local optima
+
+### Reproduction
+
+```bash
+# Run diversity experiment
+python experiments/run_diversity_experiment.py \
+    --episodes 100 \
+    --seeds 42 123 456 789 1000 \
+    --grid-size 7
+
+# Generate plots
+python experiments/plot_diversity_results.py \
+    --results experiments/results/diversity_results.json \
+    --output-dir experiments/results/plots
+```
+
 ## Limitations
 
 1. **Simple environment**: Grid world is a toy problem; real applications may have different characteristics
 2. **DQN only**: Other algorithms (PPO, SAC) may show different relative benefits
 3. **Fixed scout strategies**: Future work could explore learned or adaptive exploration
 4. **Synchronous training**: Parallel execution would enable more scouts
+5. **Diversity benefit unclear**: In simple environments, strategy quality trumps diversity
 
 ## Conclusions
 
