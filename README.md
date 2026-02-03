@@ -60,6 +60,22 @@ Better information leads to better learning.
 
 ---
 
+## Results
+
+On a 7x7 sparse-reward grid (random baseline ~9% success):
+
+![Success Rate Comparison](docs/images/success_rate_comparison.png)
+
+| Method | Success Rate |
+|--------|-------------|
+| Single scout | 0% (fails to learn) |
+| Many eyes (3 scouts) | 40% |
+| Many eyes (5 scouts) | 60% |
+
+See [Results](docs/results.md) for full analysis and reproduction instructions.
+
+---
+
 ## Project structure (high-level)
 
 This repository contains:

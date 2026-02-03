@@ -48,4 +48,8 @@ htmlcov/
 Thumbs.db
 
 # Project specific
-*.png
+# Exclude generated plots (can be regenerated from JSON data)
+experiments/results/plots/*.png
+
+# But include documentation images
+!docs/images/*.png

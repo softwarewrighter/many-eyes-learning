@@ -105,32 +105,40 @@ Put many eyes on the problem. Instead of relying on one explorer, use multiple e
 
 ## Milestones
 
-### M1: Foundation (MVP)
+### M1: Foundation (MVP) - COMPLETE
 
-- Basic scout interface
-- Simple experience buffer
-- DQN learner
-- One sparse-reward grid world
-- Sequential execution
+- [x] Basic scout interface (RandomScout, EpsilonGreedyScout)
+- [x] Simple experience buffer (ReplayBuffer)
+- [x] DQN learner with target network
+- [x] SparseGridWorld environment
+- [x] Sequential execution
+- [x] 42 tests passing
 
-### M2: Diversity
+### M2: Diversity - 90% COMPLETE
 
-- Multiple scout strategies
-- Heterogeneous scout configurations
-- Aggregation strategies
-- Basic visualization
+- [x] Multiple scout strategies (Random, EpsilonGreedy, Curious, Optimistic)
+- [x] Heterogeneous scout configurations
+- [x] Simple aggregation
+- [x] CLI visualization with policy arrows
+- [x] Result plots with matplotlib
+- [x] Reproducible experiments (5 seeds)
+- [ ] Weighted aggregation strategies
+- [ ] Web UI demo
 
-### M3: Parallel
+### M3: Parallel - NOT STARTED
 
-- Parallel execution mode
-- Performance comparison tools
-- Extended experiments
+- [ ] Parallel execution mode
+- [ ] Performance comparison tools
+- [ ] Extended experiments
 
-### M4: Polish
+### M4: Polish - PARTIAL
 
-- Complete documentation
-- Reproducibility package
-- Example notebooks
+- [x] ELI5 documentation
+- [x] Results documentation
+- [x] Architecture documentation
+- [ ] Complete API documentation
+- [ ] Tutorial notebook
+- [ ] Example notebooks
 
 ## Constraints
 
@@ -156,11 +164,22 @@ Put many eyes on the problem. Instead of relying on one explorer, use multiple e
 | Scope creep into optimization | High | Medium | Strict adherence to non-goals |
 | Results don't show clear benefit | Low | High | Start with favorable environments |
 
-## Open Questions
+## Open Questions (Answered)
 
-1. Which exploration strategies to include in initial release?
-2. How to handle continuous action spaces (if at all)?
-3. What's the right balance of environments (toy vs. realistic)?
+1. **Which exploration strategies to include in initial release?**
+   - Answer: RandomScout, EpsilonGreedyScout, CuriousScout, OptimisticScout (4 strategies implemented)
+
+2. **How to handle continuous action spaces (if at all)?**
+   - Answer: Deferred to backlog. Current focus is discrete actions for clarity.
+
+3. **What's the right balance of environments (toy vs. realistic)?**
+   - Answer: Start with toy (SparseGridWorld). Demonstrates concept clearly. More environments in backlog.
+
+## Remaining Open Questions
+
+1. Should we add a web UI (Rust/Yew) or stick with CLI?
+2. Is weighted aggregation worth implementing given diversity experiment results?
+3. What content format is most valuable: YouTube, blog, or notebook?
 
 ## References
 

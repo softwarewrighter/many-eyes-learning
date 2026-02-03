@@ -70,21 +70,40 @@ High standard deviation (49%) across seeds indicates:
 
 ### Success Rate Comparison
 
-![Success Rate Comparison](../experiments/results/plots/success_rate_comparison.png)
+![Success Rate Comparison](images/success_rate_comparison.png)
 
-Shows learned policy performance after training. Clear improvement from 1 to 5 scouts.
+**What it shows**: Bar chart comparing learned policy success rates after 75 training episodes on a 7x7 grid.
+
+- **Gray bar (random baseline)**: ~9% success - what you get with no learning at all
+- **No bar for single scout**: 0% success - learning completely failed
+- **Green bar (3 scouts)**: 40% success - many-eyes starts working
+- **Orange bar (5 scouts)**: 60% success - more scouts = better learning
+
+**Key insight**: The dashed line shows the random baseline. Single scout performs *worse* than random (it learned a bad policy). Many-eyes configurations learn policies that actually work.
 
 ### Learning Curves
 
-![Learning Curves](../experiments/results/plots/learning_curves.png)
+![Learning Curves](images/learning_curves.png)
 
-Shows training progress over episodes. Many-eyes configurations learn faster and reach higher success rates.
+**What it shows**: Training progress over 75 episodes. Left panel shows success rate during training, right panel shows cumulative reward.
+
+- **Blue line (single)**: Flat near zero - never finds useful signal
+- **Green line (3 scouts)**: Gradual improvement with high variance
+- **Orange line (5 scouts)**: Faster improvement, more stable
+
+**Key insight**: Shaded regions show variance across 5 random seeds. The high variance reflects the stochastic nature of sparse-reward learning - sometimes scouts find the goal early, sometimes late.
 
 ### Scaling with Scouts
 
-![Scouts Scaling](../experiments/results/plots/scouts_scaling.png)
+![Scouts Scaling](images/scouts_scaling.png)
 
-Shows how performance improves with number of scouts. Diminishing returns expected beyond a point.
+**What it shows**: Final policy performance vs number of scouts. Error bars show standard deviation across seeds.
+
+- Clear upward trend from 1 → 3 → 5 scouts
+- Diminishing returns expected at higher scout counts
+- Large error bars reflect seed-dependent outcomes
+
+**Key insight**: More scouts = more chances to discover the goal = better learning signal = better final policy.
 
 ## Reproduction
 
@@ -197,9 +216,30 @@ A second experiment tests whether **diversity of exploration strategies** matter
 
 ### Plots
 
-![Diversity Comparison](../experiments/results/plots/diversity_comparison.png)
+#### Diversity Comparison
 
-![Diversity Learning Curves](../experiments/results/plots/diversity_learning_curves.png)
+![Diversity Comparison](images/diversity_comparison.png)
+
+**What it shows**: Bar chart comparing success rates of different scout configurations, all using 5 scouts.
+
+- **Gray (random baseline)**: 7% - no learning
+- **Blue (homogeneous random)**: 20% - 5 random scouts, some improvement
+- **Green (homogeneous epsilon)**: 40% - 5 epsilon-greedy scouts, much better
+- **Orange (diverse mix)**: 40% - mixed strategies, same as epsilon-greedy
+
+**Key insight**: Epsilon-greedy is a better exploration strategy than pure random. But mixing strategies (diverse) doesn't beat having 5 good epsilon-greedy scouts. Strategy quality > diversity in simple environments.
+
+#### Diversity Learning Curves
+
+![Diversity Learning Curves](images/diversity_learning_curves.png)
+
+**What it shows**: Training success rate over 100 episodes for each configuration.
+
+- **Blue (homogeneous random)**: Slow, inconsistent improvement
+- **Green (homogeneous epsilon)**: Faster convergence
+- **Orange (diverse)**: Similar to epsilon-greedy
+
+**Key insight**: Epsilon-greedy scouts learn faster because they balance exploitation (following the improving policy) with exploration (random actions). Pure random scouts keep exploring blindly even as the policy improves.
 
 ### Analysis
 
