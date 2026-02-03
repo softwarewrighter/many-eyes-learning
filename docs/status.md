@@ -1,18 +1,18 @@
 # Project Status
 
-## Current Status: Planning Phase
+## Current Status: Phase 1 Complete (MVP)
 
-**Last Updated**: 2026-02-01
+**Last Updated**: 2026-02-03
 
 ## Summary
 
-The Many-Eyes Learning project is in the initial planning and documentation phase. Core concepts have been defined, but implementation has not yet begun.
+Phase 1 (Foundation/MVP) is complete. The core many-eyes learning system is implemented and working, with a demo showing significant improvement over single-scout baselines.
 
 ## Progress Overview
 
 | Phase | Status | Progress |
 |-------|--------|----------|
-| Phase 1: Foundation | Not Started | 0% |
+| Phase 1: Foundation | Complete | 100% |
 | Phase 2: Diversity | Not Started | 0% |
 | Phase 3: Parallel | Not Started | 0% |
 | Phase 4: Polish | Not Started | 0% |
@@ -26,18 +26,20 @@ The Many-Eyes Learning project is in the initial planning and documentation phas
 - [x] PRD created
 - [x] Design document created
 - [x] Development plan created
+- [x] Project setup (Python structure with pyproject.toml)
+- [x] Core abstractions (Transition, Trajectory, protocols)
+- [x] Basic scout implementation (RandomScout, EpsilonGreedyScout)
+- [x] Experience buffer (ReplayBuffer)
+- [x] Simple environment (SparseGridWorld)
+- [x] Basic learner (DQN)
+- [x] Integration (Trainer)
+- [x] First demo (single vs many-eyes comparison)
+- [x] Tests (42 passing)
 
-### In Progress
-- [ ] Project setup (Python structure)
-
-### Not Started
-- [ ] Core abstractions implementation
-- [ ] Basic scout implementation
-- [ ] Experience buffer
-- [ ] Simple environment
-- [ ] Basic learner (DQN)
-- [ ] Integration
-- [ ] First demo
+### Demo Results
+Single scout vs Many eyes (5 scouts) on 5x5 sparse grid:
+- Single: 27 total reward, 25% final success rate
+- Many eyes: 711 total reward, 78.5% final success rate
 
 ## Blockers
 
@@ -47,30 +49,31 @@ None currently.
 
 | Date | Activity |
 |------|----------|
+| 2026-02-03 | Phase 1 complete: core system, tests, demo |
 | 2026-02-01 | Created project documentation (architecture, prd, design, plan, status) |
 | 2026-02-01 | Initial project structure with README |
 
-## Next Steps
+## Next Steps (Phase 2: Diversity)
 
-1. Initialize Python project structure
-2. Set up testing framework
-3. Implement core abstractions (Scout, Trajectory, Environment protocols)
-4. Create first sparse-reward environment (grid world)
+1. Add CuriousScout (count-based exploration bonus)
+2. Add OptimisticScout (optimistic Q-value initialization)
+3. Implement weighted aggregation strategies
+4. Add coverage visualization
+5. Run diversity experiments
 
 ## Key Metrics
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Test coverage | 0% | 80%+ |
-| Documentation | Planned | Complete |
-| Demo environments | 0 | 1+ |
-| Scout strategies | 0 | 4+ |
+| Tests | 42 passing | - |
+| Demo environments | 1 (SparseGridWorld) | 1+ |
+| Scout strategies | 2 (Random, EpsilonGreedy) | 4+ |
 
 ## Risks and Issues
 
 | Issue | Status | Notes |
 |-------|--------|-------|
-| None | - | Project just started |
+| None | - | Phase 1 complete |
 
 ## Notes
 
