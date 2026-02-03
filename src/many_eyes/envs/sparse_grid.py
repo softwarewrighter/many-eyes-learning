@@ -13,7 +13,7 @@ class SparseGridWorld:
     A simple grid world with sparse rewards.
 
     The agent starts at (0, 0) and must reach the goal at (size-1, size-1).
-    Reward is +1 only when reaching the goal, 0 otherwise.
+    Reward is +1 only when reaching the goal, with optional step penalty.
 
     Actions: 0=up, 1=right, 2=down, 3=left
     """
@@ -21,6 +21,7 @@ class SparseGridWorld:
     size: int = 5
     walls: set[tuple[int, int]] = field(default_factory=set)
     max_steps: int = 100
+    step_penalty: float = -0.01  # Small penalty per step to encourage efficiency
     seed: int | None = None
 
     # Internal state
@@ -84,7 +85,10 @@ class SparseGridWorld:
             self._pos = new_pos
 
         # Check for goal
-        reward = 1.0 if self._pos == self.goal else 0.0
+        if self._pos == self.goal:
+            reward = 1.0
+        else:
+            reward = self.step_penalty  # Small penalty to encourage finding goal
         done = self._pos == self.goal or self._steps >= self.max_steps
 
         info = {
@@ -108,6 +112,7 @@ class SparseGridWorld:
             size=self.size,
             walls=deepcopy(self.walls),
             max_steps=self.max_steps,
+            step_penalty=self.step_penalty,
             seed=None,  # New RNG for copy
         )
         new_env._pos = self._pos

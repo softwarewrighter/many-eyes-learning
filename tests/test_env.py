@@ -25,7 +25,7 @@ def test_grid_reset():
 
 def test_grid_step_right():
     """Test stepping right."""
-    env = SparseGridWorld(size=3)
+    env = SparseGridWorld(size=3, step_penalty=0.0)  # No penalty for this test
     env.reset()
 
     # Move right
@@ -38,7 +38,7 @@ def test_grid_step_right():
 
 def test_grid_step_down():
     """Test stepping down."""
-    env = SparseGridWorld(size=3)
+    env = SparseGridWorld(size=3, step_penalty=0.0)  # No penalty for this test
     env.reset()
 
     # Move down

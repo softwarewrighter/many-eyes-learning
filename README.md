@@ -79,6 +79,7 @@ The results should be comparable - the difference is only wall-clock time.
 
 ## Documentation
 
+- [Results](docs/results.md) - Experimental results and reproduction instructions
 - [Architecture](docs/architecture.md) - System components and data flow
 - [PRD](docs/prd.md) - Product requirements and goals
 - [Design](docs/design.md) - Implementation details and design decisions
@@ -89,6 +90,26 @@ Additional documentation:
 - [AI Agent Instructions](docs/ai_agent_instructions.md) - Guidelines for AI coding agents
 - [Development Process](docs/process.md) - TDD workflow and quality gates
 - [Tools](docs/tools.md) - Recommended development tools
+
+---
+
+## Quick Start
+
+```bash
+# Setup
+uv venv .venv
+source .venv/bin/activate
+uv pip install -e ".[dev]"
+
+# Run interactive CLI demo
+python experiments/cli_demo.py
+
+# Run reproducible experiments
+python experiments/run_experiment.py --episodes 75 --scouts 1 3 5
+
+# Generate plots
+python experiments/plot_results.py
+```
 
 ---
 
