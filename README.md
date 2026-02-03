@@ -79,6 +79,7 @@ The results should be comparable - the difference is only wall-clock time.
 
 ## Documentation
 
+- [ELI5](docs/eli5.md) - Simple explanation of the papers and what this repo demonstrates
 - [Results](docs/results.md) - Experimental results and reproduction instructions
 - [Architecture](docs/architecture.md) - System components and data flow
 - [PRD](docs/prd.md) - Product requirements and goals
