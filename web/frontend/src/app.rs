@@ -639,7 +639,6 @@ pub fn app() -> Html {
                         on_command={on_command}
                         on_connect={on_connect}
                     />
-                    <Metrics state={(*state).clone()} />
                     <ReplayControls
                         replay_mode={state.replay_mode}
                         replay_playing={state.replay_playing}
@@ -658,6 +657,9 @@ pub fn app() -> Html {
                 </div>
                 <div class="chart-panel">
                     <LearningChart history={state.history.clone()} />
+                </div>
+                <div class="metrics-panel">
+                    <Metrics state={(*state).clone()} />
                 </div>
             </div>
 
