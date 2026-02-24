@@ -102,7 +102,6 @@ impl Scout {
                         // Collect best actions - threshold depends on mode
                         let best_actions: Vec<i32> = if self.random_tie_breaking {
                             // Soft threshold: actions within 10% of max are considered "tied"
-                            // This creates more diversity as Q-values are often close
                             let threshold = if max_q.abs() < 0.01 {
                                 0.01  // For near-zero Q-values, use absolute threshold
                             } else {
@@ -126,9 +125,25 @@ impl Scout {
 
                         if !best_actions.is_empty() {
                             if self.random_tie_breaking {
-                                // Random tie-breaking: pick randomly among best actions
-                                let idx = self.rng.gen_range(0..best_actions.len());
-                                return best_actions[idx];
+                                // Per-scout tie-breaking strategy based on scout index
+                                // Creates visually distinct paths for each scout
+                                let action = match self.index % 5 {
+                                    0 => best_actions[0],  // Scout 0: first (up-biased) - but scout 0 is random anyway
+                                    1 => *best_actions.last().unwrap(),  // Scout 1: last (left-biased)
+                                    2 => {  // Scout 2: prefer horizontal (right=1, left=3)
+                                        best_actions.iter().find(|&&a| a == 1 || a == 3)
+                                            .copied().unwrap_or(best_actions[0])
+                                    }
+                                    3 => {  // Scout 3: prefer vertical (up=0, down=2)
+                                        best_actions.iter().find(|&&a| a == 0 || a == 2)
+                                            .copied().unwrap_or(best_actions[0])
+                                    }
+                                    _ => {  // Scout 4+: random selection
+                                        let idx = self.rng.gen_range(0..best_actions.len());
+                                        best_actions[idx]
+                                    }
+                                };
+                                return action;
                             } else {
                                 // Deterministic tie-breaking: pick first (lowest index)
                                 return best_actions[0];
