@@ -21,6 +21,7 @@ pub fn controls(props: &ControlsProps) -> Html {
     let grid_size = use_state(|| 5i32);
     let episodes = use_state(|| 50i32);
     let speed = use_state(|| 1.0f64);
+    let random_tie_breaking = use_state(|| false);
 
     let on_connect = {
         let on_connect = props.on_connect.clone();
@@ -32,6 +33,7 @@ pub fn controls(props: &ControlsProps) -> Html {
         let n_scouts = *n_scouts;
         let grid_size = *grid_size;
         let episodes = *episodes;
+        let random_tie_breaking = *random_tie_breaking;
         Callback::from(move |_| {
             on_command.emit(ClientCommand::Start {
                 config: TrainingConfig {
@@ -41,6 +43,7 @@ pub fn controls(props: &ControlsProps) -> Html {
                     steps_per_episode: 100,
                     with_obstacles: false,
                     seed: None,
+                    random_tie_breaking,
                 },
             });
         })
@@ -168,6 +171,24 @@ pub fn controls(props: &ControlsProps) -> Html {
                                 disabled={!can_start}
                             />
                         </div>
+                    </div>
+                    <div class="config-group checkbox-group">
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={*random_tie_breaking}
+                                onchange={Callback::from({
+                                    let random_tie_breaking = random_tie_breaking.clone();
+                                    move |e: Event| {
+                                        if let Some(input) = e.target_dyn_into::<HtmlInputElement>() {
+                                            random_tie_breaking.set(input.checked());
+                                        }
+                                    }
+                                })}
+                                disabled={!can_start}
+                            />
+                            {" Diverse Paths (random tie-breaking)"}
+                        </label>
                     </div>
                 }
 

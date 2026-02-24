@@ -339,6 +339,35 @@ Scout 0 is always random (ε=1.0, never decays):
 
 The random scout (always ~70 steps) adds variance to the average, preventing it from reaching the theoretical optimal of 8 steps (Manhattan distance for 5×5 grid).
 
+### Why Do All Scouts Follow the Same Path?
+
+You may notice that despite multiple equivalent optimal paths existing (any sequence of 4 rights and 4 downs in a 5×5 grid), all learning scouts converge to the **same** path. This happens due to two design choices:
+
+**1. Shared Q-Table (Intentional)**
+
+All scouts contribute experiences to a single Q-table. This is the core "many eyes" concept:
+- More explorers = faster Q-value convergence
+- Scouts benefit from each other's discoveries
+- Trade-off: Policy diversity is sacrificed for learning speed
+
+**2. Deterministic Tie-Breaking (Artifact)**
+
+When extracting the greedy policy, `argmax` over equal Q-values returns the first action:
+- Actions are ordered: 0=up, 1=right, 2=down, 3=left
+- Early training has many ties (Q-values start at 0)
+- Result: Systematic bias toward "up-first" then "right-first"
+
+**Possible Improvements**:
+
+| Approach | Diversity | Shared Learning |
+|----------|-----------|-----------------|
+| Random tie-breaking | Moderate | Yes |
+| Per-scout action bias | High | Yes |
+| Separate Q-tables | Maximum | No (defeats purpose) |
+| Boltzmann exploration | Moderate | Yes |
+
+The simplest fix would be **random tie-breaking**: when Q-values are equal, pick randomly among the best actions. This preserves shared learning while allowing different scouts to discover different equivalent paths.
+
 ### Key Features
 
 1. **Parallel Visualization**: All scouts move simultaneously

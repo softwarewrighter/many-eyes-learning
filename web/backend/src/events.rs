@@ -28,6 +28,8 @@ pub struct TrainingConfig {
     #[allow(dead_code)] // Reserved for future obstacle support
     pub with_obstacles: bool,
     pub seed: Option<u64>,
+    #[serde(default)]
+    pub random_tie_breaking: bool,  // Random vs deterministic tie-breaking for equal Q-values
 }
 
 impl Default for TrainingConfig {
@@ -39,6 +41,7 @@ impl Default for TrainingConfig {
             steps_per_episode: 100,
             with_obstacles: false,
             seed: None,
+            random_tie_breaking: false,
         }
     }
 }

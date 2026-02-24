@@ -58,18 +58,18 @@ impl GridWorld {
 /// Scout with exploration strategy
 struct Scout {
     id: String,
-    #[allow(dead_code)] // Index available for future use
     index: usize,
     epsilon: f64,
     epsilon_min: f64,
     epsilon_decay: f64,
     always_random: bool,
+    random_tie_breaking: bool,
     rng: StdRng,
-    policy: Option<Vec<Vec<i32>>>,
+    q_values: Option<Vec<Vec<[f64; 4]>>>,  // Store Q-values for tie-breaking
 }
 
 impl Scout {
-    fn new(index: usize, epsilon: f64, always_random: bool, seed: u64) -> Self {
+    fn new(index: usize, epsilon: f64, always_random: bool, random_tie_breaking: bool, seed: u64) -> Self {
         Self {
             id: format!("scout_{}", index),
             index,
@@ -77,8 +77,9 @@ impl Scout {
             epsilon_min: 0.01,
             epsilon_decay: 0.95,  // Decay by 5% each episode
             always_random,
+            random_tie_breaking,
             rng: StdRng::seed_from_u64(seed + index as u64),
-            policy: None,
+            q_values: None,
         }
     }
 
@@ -90,12 +91,31 @@ impl Scout {
 
         if self.rng.gen::<f64>() < self.epsilon {
             self.rng.gen_range(0..4)
-        } else if let Some(ref policy) = self.policy {
+        } else if let Some(ref q_table) = self.q_values {
             let (row, col) = pos;
             if row >= 0 && col >= 0 {
-                if let Some(row_actions) = policy.get(row as usize) {
-                    if let Some(&action) = row_actions.get(col as usize) {
-                        return action;
+                if let Some(row_q) = q_table.get(row as usize) {
+                    if let Some(q_vals) = row_q.get(col as usize) {
+                        // Find max Q-value
+                        let max_q = q_vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+                        // Collect all actions with max Q-value (ties)
+                        let best_actions: Vec<i32> = q_vals
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, &q)| (q - max_q).abs() < 1e-9)
+                            .map(|(i, _)| i as i32)
+                            .collect();
+
+                        if !best_actions.is_empty() {
+                            if self.random_tie_breaking {
+                                // Random tie-breaking: pick randomly among best actions
+                                let idx = self.rng.gen_range(0..best_actions.len());
+                                return best_actions[idx];
+                            } else {
+                                // Deterministic tie-breaking: pick first (lowest index)
+                                return best_actions[0];
+                            }
+                        }
                     }
                 }
             }
@@ -111,8 +131,8 @@ impl Scout {
         }
     }
 
-    fn set_policy(&mut self, policy: Vec<Vec<i32>>) {
-        self.policy = Some(policy);
+    fn set_q_values(&mut self, q_values: Vec<Vec<[f64; 4]>>) {
+        self.q_values = Some(q_values);
     }
 }
 
@@ -173,6 +193,10 @@ impl QLearner {
             })
             .collect()
     }
+
+    fn get_q_values(&self) -> Vec<Vec<[f64; 4]>> {
+        self.q_table.clone()
+    }
 }
 
 /// State for a single scout during parallel exploration
@@ -217,15 +241,16 @@ pub struct StreamingTrainer {
 impl StreamingTrainer {
     pub fn new(config: TrainingConfig) -> Self {
         let seed = config.seed.unwrap_or(42);
+        let random_tie_breaking = config.random_tie_breaking;
         let scouts: Vec<Scout> = (0..config.n_scouts as usize)
             .map(|i| {
                 if i == 0 {
                     // Scout 0 is always random - provides exploration baseline
-                    Scout::new(i, 1.0, true, seed)
+                    Scout::new(i, 1.0, true, random_tie_breaking, seed)
                 } else {
                     // Other scouts start with high epsilon, decay over time
                     let epsilon = 0.5 + 0.3 * (i as f64 / config.n_scouts as f64);
-                    Scout::new(i, epsilon, false, seed)
+                    Scout::new(i, epsilon, false, random_tie_breaking, seed)
                 }
             })
             .collect();
@@ -388,12 +413,14 @@ impl StreamingTrainer {
                     episode_reward: *total_reward,
                 };
 
-                // Update scout policies and emit policy update
+                // Update scout Q-values and emit policy update
                 if self.current_episode % 5 == 0 {
-                    let policy = self.learner.get_policy();
+                    let q_values = self.learner.get_q_values();
                     for scout in &mut self.scouts {
-                        scout.set_policy(policy.clone());
+                        scout.set_q_values(q_values.clone());
                     }
+                    // Policy for visualization (deterministic for UI arrows)
+                    let policy = self.learner.get_policy();
                     self.pending_events.push_back(ServerEvent::PolicyUpdate {
                         policy,
                     });

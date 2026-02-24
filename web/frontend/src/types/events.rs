@@ -124,6 +124,8 @@ pub struct TrainingConfig {
     pub with_obstacles: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub seed: Option<i32>,
+    #[serde(default)]
+    pub random_tie_breaking: bool,  // Random vs deterministic tie-breaking for equal Q-values
 }
 
 /// Scout info for display
