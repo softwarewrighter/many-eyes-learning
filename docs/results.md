@@ -366,7 +366,7 @@ When extracting the greedy policy, `argmax` over equal Q-values returns the firs
 | Separate Q-tables | Maximum | No (defeats purpose) |
 | Boltzmann exploration | Moderate | Yes |
 
-The simplest fix would be **random tie-breaking**: when Q-values are equal, pick randomly among the best actions. This preserves shared learning while allowing different scouts to discover different equivalent paths.
+The implementation uses **soft tie-breaking**: when "Diverse Paths" is enabled, actions within 10% of the maximum Q-value are considered "tied" and one is chosen randomly. This creates visible path diversity throughout training, not just during initialization when Q-values are exactly equal.
 
 ### Key Features
 

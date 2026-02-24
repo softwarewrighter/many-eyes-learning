@@ -98,13 +98,31 @@ impl Scout {
                     if let Some(q_vals) = row_q.get(col as usize) {
                         // Find max Q-value
                         let max_q = q_vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
-                        // Collect all actions with max Q-value (ties)
-                        let best_actions: Vec<i32> = q_vals
-                            .iter()
-                            .enumerate()
-                            .filter(|(_, &q)| (q - max_q).abs() < 1e-9)
-                            .map(|(i, _)| i as i32)
-                            .collect();
+
+                        // Collect best actions - threshold depends on mode
+                        let best_actions: Vec<i32> = if self.random_tie_breaking {
+                            // Soft threshold: actions within 10% of max are considered "tied"
+                            // This creates more diversity as Q-values are often close
+                            let threshold = if max_q.abs() < 0.01 {
+                                0.01  // For near-zero Q-values, use absolute threshold
+                            } else {
+                                max_q.abs() * 0.1  // 10% relative threshold
+                            };
+                            q_vals
+                                .iter()
+                                .enumerate()
+                                .filter(|(_, &q)| max_q - q < threshold)
+                                .map(|(i, _)| i as i32)
+                                .collect()
+                        } else {
+                            // Exact match for deterministic mode
+                            q_vals
+                                .iter()
+                                .enumerate()
+                                .filter(|(_, &q)| (q - max_q).abs() < 1e-9)
+                                .map(|(i, _)| i as i32)
+                                .collect()
+                        };
 
                         if !best_actions.is_empty() {
                             if self.random_tie_breaking {
