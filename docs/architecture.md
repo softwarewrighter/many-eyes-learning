@@ -169,15 +169,22 @@ Chosen approach benefits:
 The web visualization provides real-time training observation:
 
 ```
-┌─────────────────────────┐       ┌─────────────────────────┐
-│   Yew/WASM Frontend     │◄─────►│   FastAPI Backend       │
-│   (localhost:8080)      │  WS   │   (localhost:8000)      │
-│                         │       │                         │
-│ - Grid visualization    │       │ - /ws/train (realtime)  │
-│ - Training controls     │       │ - /api/experiments      │
-│ - Metrics panel         │ REST  │ - StreamingTrainer      │
-│ - Learning curves       │◄─────►│                         │
-└─────────────────────────┘       └─────────────────────────┘
+┌─────────────────────────────────────────┐
+│   http://localhost:3200                 │
+├─────────────────────────────────────────┤
+│   FastAPI Server                        │
+│                                         │
+│   Static Files (Yew/WASM)               │
+│   - Grid visualization                  │
+│   - Training controls                   │
+│   - Metrics panel                       │
+│   - Learning curves                     │
+│                                         │
+│   API Endpoints                         │
+│   - /ws/train (WebSocket)               │
+│   - /api/experiments (REST)             │
+│   - StreamingTrainer                    │
+└─────────────────────────────────────────┘
 ```
 
 ### Web Components

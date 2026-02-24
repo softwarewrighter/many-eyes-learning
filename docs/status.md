@@ -121,9 +121,8 @@ python experiments/run_experiment.py --episodes 75 --scouts 1 3 5
 python experiments/plot_results.py
 
 # Run web visualization
-./web/run_backend.sh   # Terminal 1
-./web/run_frontend.sh  # Terminal 2
-# Open http://localhost:8080
+./scripts/serve.sh
+# Open http://localhost:3200
 ```
 
 ## Links

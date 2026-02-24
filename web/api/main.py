@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 # Add project root to path for many_eyes imports
@@ -19,15 +20,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Configure CORS for frontend
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3200",
-        "http://127.0.0.1:3200",
-        "http://localhost:8080",
-        "http://localhost:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,15 +33,8 @@ app.add_middleware(
 app.include_router(experiments_router)
 app.include_router(training_router)
 
-
-@app.get("/")
-async def root():
-    """Health check endpoint."""
-    return {
-        "status": "ok",
-        "name": "Many-Eyes Learning API",
-        "version": "0.1.0",
-    }
+# Frontend static files
+static_dir = Path(__file__).parent.parent / "frontend" / "dist"
 
 
 @app.get("/api/grid-info")
@@ -69,13 +58,42 @@ async def get_grid_info():
     }
 
 
-# Optional: Serve static files for production
-static_dir = Path(__file__).parent.parent / "frontend" / "dist"
+@app.get("/api/health")
+async def health():
+    """Health check endpoint."""
+    return {"status": "ok", "version": "0.1.0"}
+
+
+# Serve frontend - must be last to not override API routes
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get("/")
+    async def serve_index():
+        """Serve the frontend index.html."""
+        return FileResponse(static_dir / "index.html")
+
+    @app.get("/{path:path}")
+    async def serve_frontend(path: str):
+        """Serve frontend static files."""
+        file_path = static_dir / path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        # Fallback to index.html for SPA routing
+        return FileResponse(static_dir / "index.html")
+else:
+
+    @app.get("/")
+    async def root():
+        """API root when frontend not built."""
+        return {
+            "status": "ok",
+            "name": "Many-Eyes Learning API",
+            "message": "Frontend not built. Run: cd web/frontend && trunk build",
+        }
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=3200)

@@ -6,7 +6,7 @@ use crate::components::{Controls, Grid, LearningChart, Metrics, ScoutLegend};
 use crate::services::{use_websocket, WsState};
 use crate::types::{AppState, ClientCommand, ServerEvent};
 
-const WS_URL: &str = "ws://localhost:8000/ws/train/main";
+const WS_URL: &str = "ws://localhost:3200/ws/train/main";
 
 #[function_component(App)]
 pub fn app() -> Html {
