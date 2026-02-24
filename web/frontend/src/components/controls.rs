@@ -109,10 +109,10 @@ pub fn controls(props: &ControlsProps) -> Html {
                 if !props.training {
                     <div class="control-row full-width">
                         <div class="config-group">
-                            <label>{"Number of Scouts (1-10)"}</label>
+                            <label>{"Scouts (2-10)"}</label>
                             <input
                                 type="number"
-                                min="1"
+                                min="2"
                                 max="10"
                                 value={n_scouts.to_string()}
                                 oninput={Callback::from({

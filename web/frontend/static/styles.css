@@ -97,28 +97,30 @@ body {
 
 .grids-row {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
     justify-content: center;
     align-items: flex-start;
     width: 100%;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
 }
 
 /* Two-row layout for more than 5 scouts */
 .grids-row.two-rows {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 0.5rem;
 }
 
 .grids-row.two-rows .single-scout-grid {
-    flex: 0 1 calc(20% - 0.5rem);
-    min-width: 120px;
+    flex: 0 0 auto;
+    min-width: 100px;
     max-width: 160px;
 }
 
 .single-scout-grid {
-    flex: 1;
-    max-width: 220px;
+    flex: 0 0 auto;
+    min-width: 120px;
+    max-width: 200px;
     display: flex;
     flex-direction: column;
     align-items: center;

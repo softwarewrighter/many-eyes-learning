@@ -282,3 +282,68 @@ The experiments demonstrate that:
 3. **The effect is robust**: Consistent improvement across multiple seeds
 
 The core insight holds: **better information (from diverse exploration) leads to better learning**.
+
+## Web Visualization Results
+
+The web visualization demonstrates the Many-Eyes Learning concept with a real-time interactive grid-world training interface.
+
+### Training Setup
+
+- **Environment**: NxN grid (configurable 3-10)
+- **Task**: Navigate from (0,0) to goal at (N-1,N-1)
+- **Scouts**: 1-10 scouts (configurable)
+- **Algorithm**: Q-learning with shared Q-table
+- **Visualization**: Real-time parallel scout movement
+
+### Scout Configuration
+
+| Scout | Role | Epsilon | Behavior |
+|-------|------|---------|----------|
+| Scout 0 | Random Baseline | 1.0 (constant) | Always random, never follows policy |
+| Scouts 1-N | Learning Agents | 0.5-0.8 → 0.01 | Epsilon-greedy with decay |
+
+**Epsilon Decay Parameters**:
+- Starting epsilon: 0.5 + 0.3 × (scout_index / n_scouts)
+- Decay rate: 0.95 per episode
+- Minimum epsilon: 0.01
+
+### Why One Random Scout?
+
+Scout 0 is always random (ε=1.0, never decays):
+
+1. **Exploration Baseline**: Continuously discovers new paths even after other scouts converge
+2. **Q-Table Coverage**: Visits cells that greedy scouts ignore after learning
+3. **Escape Local Optima**: May find better paths that exploitative scouts miss
+4. **Visual Comparison**: Shows what "no learning" behavior looks like
+
+### Metrics Explained
+
+**Average Steps to Goal** (primary metric):
+- More informative than success rate for learning progress
+- Ranges from ~70 (random) to ~8 (optimal policy)
+- Shows policy refinement even after 100% success rate
+
+**Why Not Success Rate?**
+- With 5 scouts, only 6 values possible: 0%, 20%, 40%, 60%, 80%, 100%
+- After ~10 episodes, all scouts reach goal (100%)
+- Doesn't show continued learning
+
+### Observed Learning Behavior
+
+| Phase | Episodes | Avg Steps | Behavior |
+|-------|----------|-----------|----------|
+| Random | 1-5 | ~70 | All scouts exploring randomly |
+| Early Learning | 5-15 | 40-60 | Policy starts forming, steps decrease |
+| Convergence | 15-30 | 15-25 | Clear optimal path emerges |
+| Stable | 30+ | 12-18 | Near-optimal with random scout noise |
+
+The random scout (always ~70 steps) adds variance to the average, preventing it from reaching the theoretical optimal of 8 steps (Manhattan distance for 5×5 grid).
+
+### Key Features
+
+1. **Parallel Visualization**: All scouts move simultaneously
+2. **Per-Scout Heatmaps**: Each grid shows that scout's visitation pattern
+3. **Shared Policy**: Arrows show learned action for each cell
+4. **Speed Control**: 1x to 100x training speed
+5. **Replay Mode**: Step through recorded training at any speed
+6. **Dynamic Scouts**: 1-10 scouts with adaptive two-row layout

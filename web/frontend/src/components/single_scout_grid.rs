@@ -39,8 +39,10 @@ pub struct SingleScoutGridProps {
 #[function_component(SingleScoutGrid)]
 pub fn single_scout_grid(props: &SingleScoutGridProps) -> Html {
     let grid_size = props.grid_size as usize;
-    // Dynamic cell size: smaller when more scouts need to fit
-    let cell_size = if props.n_scouts > 5 { 30 } else { 40 };
+    // Dynamic cell size based on both scouts and grid size
+    // Target max grid width: ~180px for 5 scouts, ~140px for >5 scouts
+    let max_grid_px = if props.n_scouts > 5 { 140 } else { 180 };
+    let cell_size = (max_grid_px / grid_size).max(16).min(40);
     let svg_size = grid_size * cell_size;
     let scout_color = SCOUT_COLORS.get(props.scout_index % 10).unwrap_or(&"#888");
 
