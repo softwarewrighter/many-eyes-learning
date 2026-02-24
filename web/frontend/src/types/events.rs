@@ -122,6 +122,7 @@ pub struct AppState {
     pub grid_size: i32,
     pub scouts: Vec<ScoutInfo>,
     pub policy: Vec<Vec<i32>>,
+    pub policy_received: bool,  // True after first PolicyUpdate
     pub visited_cells: Vec<Vec<f64>>,  // Visit counts per cell
     pub current_episode: i32,
     pub total_episodes: i32,

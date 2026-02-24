@@ -45,11 +45,13 @@ impl WsHandle {
         let sender = self.sender.clone();
         let url = url.to_string();
 
+        log::info!("Connecting to WebSocket: {}", url);
         on_state.emit(WsState::Connecting);
 
         spawn_local(async move {
             match WebSocket::open(&url) {
                 Ok(ws) => {
+                    log::info!("WebSocket connected successfully");
                     let (mut write, mut read) = ws.split();
                     let (tx, mut rx) = mpsc::channel::<String>(32);
 
@@ -59,33 +61,48 @@ impl WsHandle {
                     // Spawn writer task
                     spawn_local(async move {
                         while let Some(msg) = rx.next().await {
-                            if write.send(Message::Text(msg)).await.is_err() {
+                            log::debug!("Sending: {}", msg);
+                            if let Err(e) = write.send(Message::Text(msg)).await {
+                                log::error!("Write error: {:?}", e);
                                 break;
                             }
                         }
+                        log::info!("Writer task ended");
                     });
 
                     // Read messages
+                    let mut event_count = 0;
                     while let Some(msg) = read.next().await {
                         match msg {
                             Ok(Message::Text(text)) => {
-                                if let Ok(event) = serde_json::from_str::<ServerEvent>(&text) {
-                                    on_event.emit(event);
-                                } else {
-                                    log::warn!("Failed to parse event: {}", text);
+                                event_count += 1;
+                                match serde_json::from_str::<ServerEvent>(&text) {
+                                    Ok(event) => {
+                                        if event_count <= 5 || event_count % 100 == 0 {
+                                            log::info!("Event #{}: {:?}", event_count, event);
+                                        }
+                                        on_event.emit(event);
+                                    }
+                                    Err(e) => {
+                                        log::error!("Failed to parse event: {} - raw: {}", e, text);
+                                    }
                                 }
                             }
-                            Ok(Message::Bytes(_)) => {}
+                            Ok(Message::Bytes(data)) => {
+                                log::debug!("Received binary message: {} bytes", data.len());
+                            }
                             Err(e) => {
-                                log::error!("WebSocket error: {:?}", e);
+                                log::error!("WebSocket read error: {:?}", e);
                                 break;
                             }
                         }
                     }
 
+                    log::info!("WebSocket reader ended after {} events", event_count);
                     on_state.emit(WsState::Disconnected);
                 }
                 Err(e) => {
+                    log::error!("WebSocket connection failed: {:?}", e);
                     on_state.emit(WsState::Error(format!("{:?}", e)));
                 }
             }

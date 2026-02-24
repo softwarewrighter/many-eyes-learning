@@ -108,18 +108,20 @@ pub fn grid(props: &GridProps) -> Html {
                                         fill-opacity={visit_opacity.to_string()}
                                     />
                                 }
-                                // Policy arrow
-                                if let Some(action) = policy_action {
-                                    if !is_goal {
-                                        <text
-                                            x={(x + cell_size / 2).to_string()}
-                                            y={(y + cell_size / 2 + 4).to_string()}
-                                            class="policy-arrow"
-                                            text-anchor="middle"
-                                            font-size="18"
-                                        >
-                                            {ACTION_ARROWS.get(action as usize).unwrap_or(&"?")}
-                                        </text>
+                                // Policy arrow (only show after policy is learned)
+                                if state.policy_received {
+                                    if let Some(action) = policy_action {
+                                        if !is_goal && !is_start {
+                                            <text
+                                                x={(x + cell_size / 2).to_string()}
+                                                y={(y + cell_size / 2 + 4).to_string()}
+                                                class="policy-arrow"
+                                                text-anchor="middle"
+                                                font-size="18"
+                                            >
+                                                {ACTION_ARROWS.get(action as usize).unwrap_or(&"?")}
+                                            </text>
+                                        }
                                     }
                                 }
                                 // Start label

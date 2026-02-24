@@ -74,11 +74,9 @@ fn draw_chart(canvas: &HtmlCanvasElement, history: &TrainingHistory) {
     ctx.set_text_align("center");
     let _ = ctx.fill_text("Episode", width / 2.0, height - 10.0);
 
-    ctx.save();
-    ctx.translate(15.0, height / 2.0).ok();
-    ctx.rotate(-std::f64::consts::FRAC_PI_2).ok();
-    let _ = ctx.fill_text("Success Rate", 0.0, 0.0);
-    ctx.restore();
+    // Y-axis label at top-left
+    ctx.set_text_align("left");
+    let _ = ctx.fill_text("Success %", 5.0, padding - 5.0);
 
     // Draw success rate line
     if !history.success_rates.is_empty() {
@@ -127,20 +125,25 @@ fn draw_chart(canvas: &HtmlCanvasElement, history: &TrainingHistory) {
         }
     }
 
-    // Draw grid lines
+    // Draw grid lines and Y-axis labels
     ctx.set_stroke_style_str("#303050");
     ctx.set_line_width(0.5);
-    for i in 1..5 {
-        let y = height - padding - (i as f64 / 4.0) * chart_height;
-        ctx.begin_path();
-        ctx.move_to(padding, y);
-        ctx.line_to(width - padding, y);
-        ctx.stroke();
+    ctx.set_fill_style_str("#707090");
+    ctx.set_font("10px sans-serif");
+    ctx.set_text_align("right");
 
-        // Y-axis labels
-        ctx.set_fill_style_str("#606080");
-        ctx.set_font("10px sans-serif");
-        ctx.set_text_align("right");
+    for i in 0..=4 {
+        let y = height - padding - (i as f64 / 4.0) * chart_height;
+
+        // Grid line (skip 0)
+        if i > 0 {
+            ctx.begin_path();
+            ctx.move_to(padding, y);
+            ctx.line_to(width - padding, y);
+            ctx.stroke();
+        }
+
+        // Y-axis label
         let _ = ctx.fill_text(&format!("{}%", i * 25), padding - 5.0, y + 3.0);
     }
 }

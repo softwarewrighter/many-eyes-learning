@@ -2,109 +2,94 @@
 
 Real-time visualization of multi-scout reinforcement learning training.
 
+**Stack:** Rust + Yew/WASM (frontend) + Axum (backend)
+
 ## Quick Start
 
 ```bash
-# From project root
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[web]"
+# Build and run on http://localhost:3200
+./scripts/serve.sh
+```
 
-# Install Rust/Trunk (if not already installed)
+## Development
+
+```bash
+# Install dependencies
 cargo install trunk wasm-bindgen-cli
 
-# Build and serve on http://localhost:3200
-./scripts/serve.sh
+# Development mode (hot reload)
+./scripts/dev.sh
+# Frontend: http://localhost:8080
+# Backend:  http://localhost:3200
 ```
 
 ## Architecture
 
 ```
-┌─────────────────────────┐
-│   Browser               │
-│   http://localhost:3200 │
-├─────────────────────────┤
-│   FastAPI Server        │
-│   - Static files (/)    │
-│   - REST API (/api/*)   │
-│   - WebSocket (/ws/*)   │
-└─────────────────────────┘
+┌─────────────────────────────────────────┐
+│   http://localhost:3200                 │
+├─────────────────────────────────────────┤
+│   Axum Server (Rust)                    │
+│                                         │
+│   Static Files (Yew/WASM)               │
+│   - Grid visualization                  │
+│   - Training controls                   │
+│   - Metrics panel                       │
+│   - Learning curves                     │
+│                                         │
+│   WebSocket API                         │
+│   - /ws/train/{client_id}               │
+│   - Real-time training events           │
+└─────────────────────────────────────────┘
 ```
-
-The server runs on a single port (3200) and serves:
-- Frontend static files (built Yew/WASM app)
-- REST API for experiments
-- WebSocket for real-time training events
 
 ## Features
 
 - **Real-time Training**: Watch scouts explore the grid world live
 - **Multiple Scouts**: Visualize 1-5 scouts with different exploration strategies
 - **Training Controls**: Start/pause/stop with adjustable speed
-- **Metrics Panel**: Live success rate, loss, and episode tracking
+- **Metrics Panel**: Live success rate and episode tracking
 - **Learning Curves**: Canvas-based chart of training progress
-- **Scout Legend**: Color-coded scouts with individual statistics
+- **Policy Visualization**: Arrow overlay showing learned policy
 
-## Development
+## WebSocket Protocol
 
-### Build Frontend Only
-
-```bash
-cd web/frontend
-trunk build          # Dev build
-trunk build --release  # Production build
-```
-
-### Run Server Only
-
-```bash
-source .venv/bin/activate
-python -m uvicorn web.api.main:app --port 3200
-```
-
-### API Endpoints
-
-**REST:**
-- `GET /api/experiments` - List saved experiments
-- `GET /api/experiments/{id}` - Get experiment data for replay
-- `GET /api/grid-info` - Get grid configuration and scout colors
-- `GET /api/health` - Health check
-
-**WebSocket:**
-
-Connect to `/ws/train/{client_id}` and send commands:
+Connect to `/ws/train/{client_id}` and send JSON commands:
 
 ```json
-{"command": "start", "config": {"n_scouts": 5, "grid_size": 5, "episodes": 100}}
+{"command": "start", "config": {"n_scouts": 5, "grid_size": 5, "episodes": 50}}
 {"command": "pause"}
 {"command": "resume"}
 {"command": "set_speed", "speed": 2.0}
 {"command": "stop"}
 ```
 
+Server sends events:
+- `scout_move` - Scout position update
+- `episode_complete` - Scout finished episode
+- `training_update` - Episode metrics
+- `policy_update` - Learned policy grid
+- `training_complete` - Training finished
+
 ## File Structure
 
 ```
 web/
-├── api/                    # Python FastAPI backend
-│   ├── main.py             # App entry point (serves on port 3200)
-│   ├── routes/
-│   │   ├── experiments.py  # REST: list/load experiments
-│   │   └── training.py     # WebSocket: real-time training
-│   ├── models/
-│   │   └── events.py       # Pydantic event models
-│   └── services/
-│       └── streaming_trainer.py
-│
-├── frontend/               # Yew/WASM frontend
+├── backend/                # Rust Axum server
 │   ├── Cargo.toml
-│   ├── src/
-│   │   ├── app.rs          # Root component
-│   │   ├── components/     # UI components
-│   │   ├── services/       # WebSocket client
-│   │   └── types/          # Event structs
-│   └── static/
-│       └── styles.css
+│   └── src/
+│       ├── main.rs         # Server entry point
+│       ├── events.rs       # Event types
+│       └── trainer.rs      # Training simulation
 │
-└── requirements.txt        # Python dependencies
+├── frontend/               # Rust Yew/WASM app
+│   ├── Cargo.toml
+│   ├── Trunk.toml
+│   └── src/
+│       ├── app.rs          # Root component
+│       ├── components/     # UI components
+│       ├── services/       # WebSocket client
+│       └── types/          # Event structs
+│
+└── README.md
 ```

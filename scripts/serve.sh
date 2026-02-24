@@ -1,7 +1,7 @@
 #!/bin/bash
 # Serve Many-Eyes Learning web visualization on port 3200
 #
-# This script builds the frontend and serves everything from a single port.
+# This script builds and runs the Rust backend which serves the frontend.
 # Usage: ./scripts/serve.sh
 
 set -e
@@ -21,13 +21,10 @@ cd web/frontend
 trunk build --release
 cd "$PROJECT_ROOT"
 
-echo -e "${BLUE}Starting server on http://localhost:3200${NC}"
-echo -e "${GREEN}Open http://localhost:3200 in your browser${NC}"
+echo -e "${BLUE}Building backend...${NC}"
+cd web/backend
+cargo build --release
+cd "$PROJECT_ROOT"
 
-# Activate venv if it exists
-if [ -d ".venv" ]; then
-    source .venv/bin/activate
-fi
-
-# Run the server
-python -m uvicorn web.api.main:app --host 0.0.0.0 --port 3200
+echo -e "${GREEN}Starting server on http://localhost:3200${NC}"
+./web/backend/target/release/many-eyes-server
