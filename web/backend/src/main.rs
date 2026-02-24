@@ -15,9 +15,8 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
-use tracing_subscriber;
 
-use crate::events::{ClientCommand, ServerEvent, TrainingConfig};
+use crate::events::{ClientCommand, ServerEvent};
 use crate::trainer::StreamingTrainer;
 
 #[tokio::main]

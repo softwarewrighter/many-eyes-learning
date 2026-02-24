@@ -37,9 +37,9 @@ pub fn metrics(props: &MetricsProps) -> Html {
                 </div>
                 <div class="metric">
                     <div class="metric-value">
-                        {format!("{:.4}", state.loss)}
+                        {format!("{:.1}", state.average_steps)}
                     </div>
-                    <div class="metric-label">{"Loss"}</div>
+                    <div class="metric-label">{"Avg Steps"}</div>
                 </div>
                 <div class="metric">
                     <div class="metric-value">

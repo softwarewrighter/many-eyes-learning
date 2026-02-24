@@ -20,6 +20,7 @@ pub enum WsState {
 
 /// Message to send to the WebSocket callback
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Part of API surface
 pub enum WsMessage {
     Connect(String),
     Send(ClientCommand),
@@ -109,6 +110,7 @@ impl WsHandle {
         });
     }
 
+    #[allow(dead_code)] // Available for future use
     pub fn disconnect(&self) {
         *self.sender.borrow_mut() = None;
     }

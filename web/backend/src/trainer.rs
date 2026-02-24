@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use std::time::Duration;
 use tokio::time::sleep;
 
-use crate::events::{ServerEvent, TrainingConfig, TrainingHistory};
+use crate::events::{ScoutMoveData, ServerEvent, TrainingConfig, TrainingHistory};
 
 /// Grid world environment
 struct GridWorld {
@@ -58,6 +58,7 @@ impl GridWorld {
 /// Scout with exploration strategy
 struct Scout {
     id: String,
+    #[allow(dead_code)] // Index available for future use
     index: usize,
     epsilon: f64,
     rng: StdRng,
@@ -157,27 +158,28 @@ impl QLearner {
     }
 }
 
+/// State for a single scout during parallel exploration
+struct ScoutExplorationState {
+    env: GridWorld,
+    pos: (i32, i32),
+    total_reward: f64,
+    step_count: i32,
+    done: bool,
+    reached_goal: bool,
+}
+
 /// Training state machine
 enum TrainerState {
-    /// Running scout exploration
-    Exploring {
-        scout_idx: usize,
-        env: GridWorld,
-        pos: (i32, i32),
-        total_reward: f64,
-        step_count: i32,
-    },
-    /// Episode finished for a scout
-    ScoutDone {
-        scout_idx: usize,
-        reached_goal: bool,
-        total_reward: f64,
-        steps: i32,
+    /// All scouts exploring in parallel
+    ParallelExploring {
+        scout_states: Vec<ScoutExplorationState>,
+        global_step: i32,
     },
     /// All scouts done, emit training update
     EpisodeDone {
         successes: i32,
         total_reward: f64,
+        total_steps: i32,
     },
     /// Training complete
     Finished,
@@ -192,8 +194,6 @@ pub struct StreamingTrainer {
     paused: bool,
     speed: f64,
     state: TrainerState,
-    episode_successes: i32,
-    episode_reward: f64,
     pending_events: VecDeque<ServerEvent>,
 }
 
@@ -211,9 +211,21 @@ impl StreamingTrainer {
             })
             .collect();
 
-        // Start first scout
-        let mut env = GridWorld::new(config.grid_size, config.steps_per_episode);
-        let pos = env.reset();
+        // Initialize all scouts in parallel
+        let scout_states: Vec<ScoutExplorationState> = (0..config.n_scouts as usize)
+            .map(|_| {
+                let mut env = GridWorld::new(config.grid_size, config.steps_per_episode);
+                let pos = env.reset();
+                ScoutExplorationState {
+                    env,
+                    pos,
+                    total_reward: 0.0,
+                    step_count: 0,
+                    done: false,
+                    reached_goal: false,
+                }
+            })
+            .collect();
 
         Self {
             learner: QLearner::new(config.grid_size),
@@ -223,15 +235,10 @@ impl StreamingTrainer {
             current_episode: 0,
             paused: false,
             speed: 1.0,
-            state: TrainerState::Exploring {
-                scout_idx: 0,
-                env,
-                pos,
-                total_reward: 0.0,
-                step_count: 0,
+            state: TrainerState::ParallelExploring {
+                scout_states,
+                global_step: 0,
             },
-            episode_successes: 0,
-            episode_reward: 0.0,
             pending_events: VecDeque::new(),
         }
     }
@@ -245,120 +252,112 @@ impl StreamingTrainer {
     }
 
     pub fn set_speed(&mut self, speed: f64) {
-        self.speed = speed.clamp(0.1, 10.0);
+        self.speed = speed.clamp(0.1, 100.0);
     }
 
+    #[allow(clippy::while_immutable_condition)]
     pub async fn step(&mut self) -> Option<ServerEvent> {
         // Return any pending events first
         if let Some(event) = self.pending_events.pop_front() {
             return Some(event);
         }
 
-        // Wait if paused
+        // Wait if paused (self.paused is modified externally via pause()/resume())
         while self.paused {
             sleep(Duration::from_millis(100)).await;
         }
 
         match &mut self.state {
-            TrainerState::Exploring {
-                scout_idx,
-                env,
-                pos,
-                total_reward,
-                step_count,
-            } => {
-                let scout = &mut self.scouts[*scout_idx];
-                let action = scout.select_action(*pos, self.config.grid_size);
-                let (new_pos, reward, done) = env.step(action);
+            TrainerState::ParallelExploring { scout_states, global_step } => {
+                *global_step += 1;
+                let current_step = *global_step;
 
-                // Update Q-learner
-                self.learner.update(*pos, action, reward, new_pos, done);
+                // Step all scouts that aren't done
+                let mut moves: Vec<ScoutMoveData> = Vec::new();
+                let mut all_done = true;
 
-                *total_reward += reward;
-                *step_count += 1;
+                for (idx, scout_state) in scout_states.iter_mut().enumerate() {
+                    if scout_state.done {
+                        continue;
+                    }
+                    all_done = false;
 
-                let event = ServerEvent::ScoutMove {
-                    scout_id: scout.id.clone(),
-                    scout_index: scout.index,
-                    position: new_pos,
-                    action,
-                    reward,
-                    done,
-                    step: *step_count,
-                };
+                    let scout = &mut self.scouts[idx];
+                    let action = scout.select_action(scout_state.pos, self.config.grid_size);
+                    let (new_pos, reward, done) = scout_state.env.step(action);
 
-                if done {
-                    let reached_goal = reward > 0.0;
-                    let tr = *total_reward;
-                    let sc = *step_count;
-                    let si = *scout_idx;
+                    // Update Q-learner
+                    self.learner.update(scout_state.pos, action, reward, new_pos, done);
 
-                    self.state = TrainerState::ScoutDone {
-                        scout_idx: si,
-                        reached_goal,
-                        total_reward: tr,
-                        steps: sc,
+                    scout_state.total_reward += reward;
+                    scout_state.step_count += 1;
+
+                    moves.push(ScoutMoveData {
+                        scout_id: scout.id.clone(),
+                        scout_index: idx,
+                        position: new_pos,
+                        action,
+                        reward,
+                        done,
+                    });
+
+                    if done {
+                        scout_state.done = true;
+                        scout_state.reached_goal = reward > 0.0;
+                    } else {
+                        scout_state.pos = new_pos;
+                    }
+                }
+
+                // Check if all scouts are now done
+                let still_exploring = scout_states.iter().any(|s| !s.done);
+
+                if !still_exploring {
+                    // Calculate episode stats
+                    let successes = scout_states.iter().filter(|s| s.reached_goal).count() as i32;
+                    let total_reward: f64 = scout_states.iter().map(|s| s.total_reward).sum();
+                    let total_steps: i32 = scout_states.iter().map(|s| s.step_count).sum();
+
+                    // Queue episode complete events for each scout
+                    for (idx, scout_state) in scout_states.iter().enumerate() {
+                        self.pending_events.push_back(ServerEvent::EpisodeComplete {
+                            scout_id: format!("scout_{}", idx),
+                            scout_index: idx,
+                            reached_goal: scout_state.reached_goal,
+                            total_reward: scout_state.total_reward,
+                            steps: scout_state.step_count,
+                        });
+                    }
+
+                    self.state = TrainerState::EpisodeDone {
+                        successes,
+                        total_reward,
+                        total_steps,
                     };
-                } else {
-                    *pos = new_pos;
                 }
 
                 // Delay for visualization (50ms default, adjustable with speed)
                 let delay = (50.0 / self.speed) as u64;
                 sleep(Duration::from_millis(delay)).await;
 
-                Some(event)
-            }
-
-            TrainerState::ScoutDone {
-                scout_idx,
-                reached_goal,
-                total_reward,
-                steps,
-            } => {
-                let scout = &self.scouts[*scout_idx];
-                let event = ServerEvent::EpisodeComplete {
-                    scout_id: scout.id.clone(),
-                    scout_index: *scout_idx,
-                    reached_goal: *reached_goal,
-                    total_reward: *total_reward,
-                    steps: *steps,
-                };
-
-                if *reached_goal {
-                    self.episode_successes += 1;
-                }
-                self.episode_reward += *total_reward;
-
-                let next_scout_idx = *scout_idx + 1;
-
-                if next_scout_idx < self.scouts.len() {
-                    // Start next scout
-                    let mut env = GridWorld::new(self.config.grid_size, self.config.steps_per_episode);
-                    let pos = env.reset();
-                    self.state = TrainerState::Exploring {
-                        scout_idx: next_scout_idx,
-                        env,
-                        pos,
-                        total_reward: 0.0,
-                        step_count: 0,
-                    };
+                // Return batch moves event if any scouts moved
+                if moves.is_empty() && all_done {
+                    // All scouts were already done, transition happened
+                    self.pending_events.pop_front()
                 } else {
-                    // All scouts done
-                    self.state = TrainerState::EpisodeDone {
-                        successes: self.episode_successes,
-                        total_reward: self.episode_reward,
-                    };
+                    Some(ServerEvent::BatchScoutMoves {
+                        moves,
+                        step: current_step,
+                    })
                 }
-
-                Some(event)
             }
 
-            TrainerState::EpisodeDone { successes, total_reward } => {
+            TrainerState::EpisodeDone { successes, total_reward, total_steps } => {
                 let success_rate = *successes as f64 / self.scouts.len() as f64;
+                let average_steps = *total_steps as f64 / self.scouts.len() as f64;
                 self.history.success_rates.push(success_rate);
                 self.history.episode_rewards.push(*total_reward);
-                self.history.losses.push(0.0);
+                self.history.average_steps.push(average_steps);
 
                 self.current_episode += 1;
 
@@ -366,7 +365,7 @@ impl StreamingTrainer {
                     episode: self.current_episode,
                     total_episodes: self.config.episodes,
                     success_rate,
-                    loss: 0.0,
+                    average_steps,
                     episode_reward: *total_reward,
                 };
 
@@ -385,18 +384,25 @@ impl StreamingTrainer {
                 if self.current_episode >= self.config.episodes {
                     self.state = TrainerState::Finished;
                 } else {
-                    // Reset for next episode
-                    self.episode_successes = 0;
-                    self.episode_reward = 0.0;
+                    // Reset for next episode - all scouts in parallel
+                    let scout_states: Vec<ScoutExplorationState> = (0..self.scouts.len())
+                        .map(|_| {
+                            let mut env = GridWorld::new(self.config.grid_size, self.config.steps_per_episode);
+                            let pos = env.reset();
+                            ScoutExplorationState {
+                                env,
+                                pos,
+                                total_reward: 0.0,
+                                step_count: 0,
+                                done: false,
+                                reached_goal: false,
+                            }
+                        })
+                        .collect();
 
-                    let mut env = GridWorld::new(self.config.grid_size, self.config.steps_per_episode);
-                    let pos = env.reset();
-                    self.state = TrainerState::Exploring {
-                        scout_idx: 0,
-                        env,
-                        pos,
-                        total_reward: 0.0,
-                        step_count: 0,
+                    self.state = TrainerState::ParallelExploring {
+                        scout_states,
+                        global_step: 0,
                     };
                 }
 

@@ -199,9 +199,9 @@ pub fn controls(props: &ControlsProps) -> Html {
                         <label>{format!("Speed: {}x", *speed)}</label>
                         <input
                             type="range"
-                            min="0.5"
-                            max="4"
-                            step="0.5"
+                            min="1"
+                            max="100"
+                            step="1"
                             value={speed.to_string()}
                             oninput={on_speed_change}
                         />

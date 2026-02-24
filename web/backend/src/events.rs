@@ -25,6 +25,7 @@ pub struct TrainingConfig {
     pub episodes: i32,
     pub steps_per_episode: i32,
     #[serde(default)]
+    #[allow(dead_code)] // Reserved for future obstacle support
     pub with_obstacles: bool,
     pub seed: Option<u64>,
 }
@@ -42,10 +43,22 @@ impl Default for TrainingConfig {
     }
 }
 
+/// Data for a single scout move (used in batch moves)
+#[derive(Debug, Clone, Serialize)]
+pub struct ScoutMoveData {
+    pub scout_id: String,
+    pub scout_index: usize,
+    pub position: (i32, i32),
+    pub action: i32,
+    pub reward: f64,
+    pub done: bool,
+}
+
 /// Server -> Client events
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type")]
 pub enum ServerEvent {
+    #[allow(dead_code)] // Kept for replay compatibility
     #[serde(rename = "scout_move")]
     ScoutMove {
         scout_id: String,
@@ -54,6 +67,12 @@ pub enum ServerEvent {
         action: i32,
         reward: f64,
         done: bool,
+        step: i32,
+    },
+
+    #[serde(rename = "batch_scout_moves")]
+    BatchScoutMoves {
+        moves: Vec<ScoutMoveData>,
         step: i32,
     },
 
@@ -71,7 +90,7 @@ pub enum ServerEvent {
         episode: i32,
         total_episodes: i32,
         success_rate: f64,
-        loss: f64,
+        average_steps: f64,
         episode_reward: f64,
     },
 
@@ -85,6 +104,7 @@ pub enum ServerEvent {
     },
 
     #[serde(rename = "error")]
+    #[allow(dead_code)] // Reserved for error reporting
     Error { message: String },
 }
 
@@ -92,5 +112,5 @@ pub enum ServerEvent {
 pub struct TrainingHistory {
     pub episode_rewards: Vec<f64>,
     pub success_rates: Vec<f64>,
-    pub losses: Vec<f64>,
+    pub average_steps: Vec<f64>,
 }
