@@ -44,11 +44,18 @@ pub fn single_scout_grid(props: &SingleScoutGridProps) -> Html {
         .cloned()
         .fold(1.0, f64::max);
 
+    // Scout 0 is always random (exploration baseline)
+    let label = if props.scout_index == 0 {
+        "Random".to_string()
+    } else {
+        format!("Scout {}", props.scout_index)
+    };
+
     html! {
         <div class="single-scout-grid">
             <div class="scout-grid-header">
                 <span class="scout-indicator" style={format!("background-color: {}", scout_color)}></span>
-                <span class="scout-label">{format!("Scout {}", props.scout_index)}</span>
+                <span class="scout-label">{label}</span>
             </div>
             <svg
                 class="grid-svg-small"

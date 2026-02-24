@@ -61,22 +61,33 @@ struct Scout {
     #[allow(dead_code)] // Index available for future use
     index: usize,
     epsilon: f64,
+    epsilon_min: f64,
+    epsilon_decay: f64,
+    always_random: bool,
     rng: StdRng,
     policy: Option<Vec<Vec<i32>>>,
 }
 
 impl Scout {
-    fn new(index: usize, epsilon: f64, seed: u64) -> Self {
+    fn new(index: usize, epsilon: f64, always_random: bool, seed: u64) -> Self {
         Self {
             id: format!("scout_{}", index),
             index,
             epsilon,
+            epsilon_min: 0.01,
+            epsilon_decay: 0.95,  // Decay by 5% each episode
+            always_random,
             rng: StdRng::seed_from_u64(seed + index as u64),
             policy: None,
         }
     }
 
     fn select_action(&mut self, pos: (i32, i32), _grid_size: i32) -> i32 {
+        // Always random scout never follows policy
+        if self.always_random {
+            return self.rng.gen_range(0..4);
+        }
+
         if self.rng.gen::<f64>() < self.epsilon {
             self.rng.gen_range(0..4)
         } else if let Some(ref policy) = self.policy {
@@ -91,6 +102,12 @@ impl Scout {
             self.rng.gen_range(0..4)
         } else {
             self.rng.gen_range(0..4)
+        }
+    }
+
+    fn decay_epsilon(&mut self) {
+        if !self.always_random {
+            self.epsilon = (self.epsilon * self.epsilon_decay).max(self.epsilon_min);
         }
     }
 
@@ -202,12 +219,14 @@ impl StreamingTrainer {
         let seed = config.seed.unwrap_or(42);
         let scouts: Vec<Scout> = (0..config.n_scouts as usize)
             .map(|i| {
-                let epsilon = if i == 0 {
-                    1.0  // First scout is random
+                if i == 0 {
+                    // Scout 0 is always random - provides exploration baseline
+                    Scout::new(i, 1.0, true, seed)
                 } else {
-                    0.1 + 0.2 * (i as f64 / config.n_scouts as f64)
-                };
-                Scout::new(i, epsilon, seed)
+                    // Other scouts start with high epsilon, decay over time
+                    let epsilon = 0.5 + 0.3 * (i as f64 / config.n_scouts as f64);
+                    Scout::new(i, epsilon, false, seed)
+                }
             })
             .collect();
 
@@ -378,6 +397,11 @@ impl StreamingTrainer {
                     self.pending_events.push_back(ServerEvent::PolicyUpdate {
                         policy,
                     });
+                }
+
+                // Decay epsilon for all scouts (except always-random scout 0)
+                for scout in &mut self.scouts {
+                    scout.decay_epsilon();
                 }
 
                 // Check if training is complete
