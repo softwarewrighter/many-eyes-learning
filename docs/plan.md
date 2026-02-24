@@ -1,6 +1,6 @@
 # Development Plan
 
-## Current Phase: Phase 2 (90% complete)
+## Current Phase: Phase 2 (100% complete)
 
 This document tracks the development plan and progress for the Many-Eyes Learning project.
 
@@ -58,7 +58,7 @@ This document tracks the development plan and progress for the Many-Eyes Learnin
 - [x] Show single vs. many scouts
 - [x] Generate first learning curve
 
-## Phase 2: Diversity - IN PROGRESS (90%)
+## Phase 2: Diversity - COMPLETE
 
 ### Objectives
 - Multiple exploration strategies
@@ -87,8 +87,17 @@ This document tracks the development plan and progress for the Many-Eyes Learnin
 #### 2.4 Visualization
 - [x] CLI grid visualization with policy arrows
 - [x] Learning curve comparison plots
-- [ ] Scout behavior animation
+- [x] Scout behavior animation (web visualization)
 - [x] Matplotlib-based output
+
+#### 2.6 Web Visualization
+- [x] FastAPI backend with WebSocket
+- [x] Yew/WASM frontend
+- [x] Real-time grid visualization
+- [x] Training controls (start/pause/stop/speed)
+- [x] Live metrics panel
+- [x] Learning curves chart
+- [x] Scout legend with stats
 
 #### 2.5 Experiments
 - [x] Design comparison experiments
@@ -100,12 +109,11 @@ This document tracks the development plan and progress for the Many-Eyes Learnin
 
 These are the recommended next actions:
 
-### Option A: Finish Phase 2 (Recommended)
+### Option A: Finish Remaining Phase 2 Items
 1. **Weighted aggregation** - Implement RewardWeightedAggregator to prioritize high-reward trajectories
-2. **Web UI demo** - Simple browser-based visualization using Rust/Yew/WASM
-3. **BoltzmannScout** - Temperature-based action selection
+2. **BoltzmannScout** - Temperature-based action selection
 
-### Option B: Start Phase 3
+### Option B: Start Phase 3 (Recommended)
 1. **Parallel execution** - Run scouts concurrently
 2. **Larger experiments** - 10x10 grid, 10+ scouts
 3. **Performance analysis** - Compare sequential vs parallel
@@ -208,6 +216,8 @@ This is a research/educational project with no hard deadlines. Progress is track
 | - | Python as primary language | Accessibility, ecosystem |
 | - | DQN as first learner | Simplicity, well understood |
 | - | Grid world as first env | Easy to visualize, sparse rewards |
+| 2026-02-24 | Yew/WASM for web frontend | High performance, type safety |
+| 2026-02-24 | FastAPI for backend | Modern async Python, WebSocket support |
 
 ## References
 

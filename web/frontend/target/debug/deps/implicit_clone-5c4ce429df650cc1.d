@@ -1,0 +1,10 @@
+/Users/mike/github/softwarewrighter/many-eyes-learning/web/frontend/target/debug/deps/implicit_clone-5c4ce429df650cc1.d: /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/lib.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/sync.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/array.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/map.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/string.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/unsync.rs
+
+/Users/mike/github/softwarewrighter/many-eyes-learning/web/frontend/target/debug/deps/libimplicit_clone-5c4ce429df650cc1.rmeta: /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/lib.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/sync.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/array.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/map.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/string.rs /Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/unsync.rs
+
+/Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/lib.rs:
+/Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/sync.rs:
+/Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/array.rs:
+/Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/map.rs:
+/Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/string.rs:
+/Users/mike/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/implicit-clone-0.4.9/src/unsync.rs:

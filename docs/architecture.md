@@ -164,6 +164,50 @@ Chosen approach benefits:
 - Single learner to maintain
 - Cross-pollination of experiences
 
+## Web Visualization Architecture
+
+The web visualization provides real-time training observation:
+
+```
+┌─────────────────────────┐       ┌─────────────────────────┐
+│   Yew/WASM Frontend     │◄─────►│   FastAPI Backend       │
+│   (localhost:8080)      │  WS   │   (localhost:8000)      │
+│                         │       │                         │
+│ - Grid visualization    │       │ - /ws/train (realtime)  │
+│ - Training controls     │       │ - /api/experiments      │
+│ - Metrics panel         │ REST  │ - StreamingTrainer      │
+│ - Learning curves       │◄─────►│                         │
+└─────────────────────────┘       └─────────────────────────┘
+```
+
+### Web Components
+
+**Backend (FastAPI/Python)**
+- `StreamingTrainer`: Wraps training loop, yields events per step
+- WebSocket endpoint streams events in real-time
+- REST API for listing/loading saved experiments
+
+**Frontend (Yew/WASM/Rust)**
+- Grid component: SVG-based visualization of scouts and policy
+- Controls: Start/pause/stop with speed adjustment
+- Metrics: Live success rate, loss, episode tracking
+- Chart: Canvas-based learning curves
+
+### Event Protocol
+
+Server → Client:
+- `ScoutMoveEvent`: Scout position, action, reward
+- `EpisodeCompleteEvent`: Episode summary per scout
+- `TrainingUpdateEvent`: Aggregated metrics per episode
+- `PolicyUpdateEvent`: Current learned policy grid
+- `TrainingCompleteEvent`: Final results
+
+Client → Server:
+- `start`: Begin training with config
+- `pause`/`resume`: Control training
+- `set_speed`: Adjust visualization speed
+- `stop`: Terminate training
+
 ## File Organization
 
 ```
@@ -184,7 +228,16 @@ many-eyes-learning/
 |   |-- envs/             # Environment wrappers
 |   |   |-- sparse.py     # Sparse-reward environments
 |-- experiments/          # Reproducible experiments
-|-- visualizations/       # Visualization tools
+|-- web/                  # Web visualization
+|   |-- api/              # FastAPI backend
+|   |   |-- routes/       # REST and WebSocket routes
+|   |   |-- models/       # Pydantic event models
+|   |   |-- services/     # StreamingTrainer
+|   |-- frontend/         # Yew/WASM frontend
+|       |-- src/
+|           |-- components/  # UI components
+|           |-- services/    # WebSocket client
+|           |-- types/       # Event structs
 |-- docs/                 # Documentation
 ```
 

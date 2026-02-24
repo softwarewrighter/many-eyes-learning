@@ -126,7 +126,23 @@ python experiments/run_experiment.py --episodes 75 --scouts 1 3 5
 
 # Generate plots
 python experiments/plot_results.py
+
+# Run web visualization (requires Rust/trunk)
+./web/run_backend.sh   # Terminal 1
+./web/run_frontend.sh  # Terminal 2
+# Open http://localhost:3200
 ```
+
+## Web Visualization
+
+A real-time web interface for visualizing multi-scout training:
+
+- **Live Grid**: Watch scouts explore the grid world
+- **Training Controls**: Start/pause/stop with adjustable speed
+- **Metrics Panel**: Live success rate and loss tracking
+- **Learning Curves**: Animated training progress charts
+
+See [web/README.md](web/README.md) for setup instructions.
 
 ---
 

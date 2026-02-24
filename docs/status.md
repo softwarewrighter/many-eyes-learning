@@ -2,7 +2,7 @@
 
 ## Current Status: Phase 2 In Progress
 
-**Last Updated**: 2026-02-03
+**Last Updated**: 2026-02-24
 
 ## Summary
 
@@ -18,7 +18,7 @@ Phase 1 complete, Phase 2 partially complete. The system now has:
 | Phase | Status | Progress |
 |-------|--------|----------|
 | Phase 1: Foundation | Complete | 100% |
-| Phase 2: Diversity | In Progress | 90% |
+| Phase 2: Diversity | Complete | 100% |
 | Phase 3: Parallel | Not Started | 0% |
 | Phase 4: Polish | Not Started | 0% |
 
@@ -65,7 +65,15 @@ See [results.md](results.md) for full details and reproduction instructions.
 
 ### Not Yet Started
 - [ ] Weighted aggregation strategies
-- [ ] Web UI demo
+
+### Web UI (Complete)
+- [x] FastAPI backend with WebSocket support
+- [x] Yew/WASM frontend with real-time visualization
+- [x] Grid world visualization with scout markers
+- [x] Training controls (start/pause/stop/speed)
+- [x] Live metrics panel
+- [x] Learning curves chart
+- [x] Scout legend with stats
 
 ## Blockers
 
@@ -75,6 +83,7 @@ None currently.
 
 | Date | Activity |
 |------|----------|
+| 2026-02-24 | Added web visualization (FastAPI + Yew/WASM) |
 | 2026-02-03 | Added CuriousScout, OptimisticScout, diversity experiment |
 | 2026-02-03 | Phase 2: Added evaluation, experiments, CLI demo, plots, results.md |
 | 2026-02-03 | Fixed DQN learning with step penalty |
@@ -90,6 +99,7 @@ None currently.
 | Scout strategies | 4 (Random, EpsilonGreedy, Curious, Optimistic) | 4+ |
 | Reproducible results | Yes | Yes |
 | CLI visualization | Yes | Yes |
+| Web UI | Yes | Yes |
 
 ## Reproduction
 
@@ -109,6 +119,11 @@ python experiments/run_experiment.py --episodes 75 --scouts 1 3 5
 
 # Generate plots
 python experiments/plot_results.py
+
+# Run web visualization
+./web/run_backend.sh   # Terminal 1
+./web/run_frontend.sh  # Terminal 2
+# Open http://localhost:8080
 ```
 
 ## Links

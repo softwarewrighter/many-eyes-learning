@@ -286,6 +286,42 @@ Reconstruct exploration as video.
 - Different colors for different scouts
 - Trail showing recent history
 
+### Web Visualization
+
+Real-time browser-based training visualization.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Many-Eyes Learning                    [Connected]          │
+├─────────────────────────────────────────────────────────────┤
+│                              │  Controls                    │
+│  ┌───────────────────────┐   │  [Start] [Pause] [Stop]      │
+│  │  Grid Visualization   │   │  Speed: [====○===] 2x        │
+│  │  (SVG with scouts)    │   │                              │
+│  │                       │   │  Metrics                     │
+│  │  0→ 1→ 2→ G           │   │  Episode: 45/100             │
+│  │  ↓     ↑              │   │  Success: 60%                │
+│  │  3→ 4→ 5↗             │   │  Loss: 0.0023                │
+│  │                       │   │                              │
+│  └───────────────────────┘   │  Scouts                      │
+│                              │  ● Scout 0 (Random)    +12.3 │
+│  ┌───────────────────────┐   │  ● Scout 1 (ε=0.14)   +8.7  │
+│  │  Learning Curves      │   │  ● Scout 2 (ε=0.22)   +15.2 │
+│  │  (Canvas chart)       │   │                              │
+│  └───────────────────────┘   │                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Technology choices:
+- **Backend**: FastAPI with WebSocket for real-time events
+- **Frontend**: Yew/WASM for high-performance rendering
+- **Protocol**: JSON events over WebSocket
+
+Event types:
+- `ScoutMoveEvent`: Position updates for animation
+- `TrainingUpdateEvent`: Metrics per episode
+- `PolicyUpdateEvent`: Arrow overlay updates
+
 ## Configuration
 
 ### Experiment Config

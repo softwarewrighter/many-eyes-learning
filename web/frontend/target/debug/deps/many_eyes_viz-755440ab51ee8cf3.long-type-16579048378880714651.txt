@@ -1,0 +1,1 @@
+(Rc<RefCell<std::option::Option<futures::futures_channel::mpsc::Sender<std::string::String>>>>, yew::Callback<types::events::ServerEvent>, yew::Callback<services::websocket::WsState>)

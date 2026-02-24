@@ -114,7 +114,7 @@ Put many eyes on the problem. Instead of relying on one explorer, use multiple e
 - [x] Sequential execution
 - [x] 42 tests passing
 
-### M2: Diversity - 90% COMPLETE
+### M2: Diversity - COMPLETE
 
 - [x] Multiple scout strategies (Random, EpsilonGreedy, Curious, Optimistic)
 - [x] Heterogeneous scout configurations
@@ -122,8 +122,8 @@ Put many eyes on the problem. Instead of relying on one explorer, use multiple e
 - [x] CLI visualization with policy arrows
 - [x] Result plots with matplotlib
 - [x] Reproducible experiments (5 seeds)
-- [ ] Weighted aggregation strategies
-- [ ] Web UI demo
+- [x] Web UI demo (FastAPI + Yew/WASM)
+- [ ] Weighted aggregation strategies (moved to backlog)
 
 ### M3: Parallel - NOT STARTED
 
@@ -177,7 +177,7 @@ Put many eyes on the problem. Instead of relying on one explorer, use multiple e
 
 ## Remaining Open Questions
 
-1. Should we add a web UI (Rust/Yew) or stick with CLI?
+1. ~~Should we add a web UI (Rust/Yew) or stick with CLI?~~ **Answered**: Web UI implemented with FastAPI backend + Yew/WASM frontend
 2. Is weighted aggregation worth implementing given diversity experiment results?
 3. What content format is most valuable: YouTube, blog, or notebook?
 
