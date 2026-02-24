@@ -1,12 +1,17 @@
 /* Many-Eyes Learning Visualization Styles */
 
 :root {
-    /* Scout colors (colorblind-friendly) */
+    /* Scout colors (colorblind-friendly, 10 colors for up to 10 scouts) */
     --scout-0: #2196F3;
     --scout-1: #4CAF50;
     --scout-2: #FF9800;
     --scout-3: #9C27B0;
     --scout-4: #F44336;
+    --scout-5: #00BCD4;
+    --scout-6: #E91E63;
+    --scout-7: #8BC34A;
+    --scout-8: #FF5722;
+    --scout-9: #607D8B;
 
     /* UI colors */
     --bg-primary: #1a1a2e;
@@ -96,6 +101,19 @@ body {
     justify-content: center;
     align-items: flex-start;
     width: 100%;
+    flex-wrap: nowrap;
+}
+
+/* Two-row layout for more than 5 scouts */
+.grids-row.two-rows {
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.grids-row.two-rows .single-scout-grid {
+    flex: 0 1 calc(20% - 0.5rem);
+    min-width: 120px;
+    max-width: 160px;
 }
 
 .single-scout-grid {

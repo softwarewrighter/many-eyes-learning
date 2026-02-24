@@ -4,13 +4,18 @@ use yew::prelude::*;
 
 use crate::types::ScoutInfo;
 
-/// Scout colors (colorblind-friendly)
-const SCOUT_COLORS: [&str; 5] = [
-    "#2196F3", // Blue
+/// Scout colors (colorblind-friendly, 10 colors for up to 10 scouts)
+const SCOUT_COLORS: [&str; 10] = [
+    "#2196F3", // Blue (Random scout)
     "#4CAF50", // Green
     "#FF9800", // Orange
     "#9C27B0", // Purple
     "#F44336", // Red
+    "#00BCD4", // Cyan
+    "#E91E63", // Pink
+    "#8BC34A", // Light Green
+    "#FF5722", // Deep Orange
+    "#607D8B", // Blue Grey
 ];
 
 fn get_scout_type(index: usize, total: usize) -> &'static str {
@@ -42,7 +47,7 @@ pub fn scout_legend(props: &ScoutLegendProps) -> Html {
             <div class="panel-title">{"Scouts"}</div>
             <div class="scout-legend">
                 {for props.scouts.iter().map(|scout| {
-                    let color = SCOUT_COLORS.get(scout.index % 5).unwrap_or(&"#888");
+                    let color = SCOUT_COLORS.get(scout.index % 10).unwrap_or(&"#888");
                     let success_rate = if scout.episodes_completed > 0 {
                         scout.successes as f64 / scout.episodes_completed as f64 * 100.0
                     } else {

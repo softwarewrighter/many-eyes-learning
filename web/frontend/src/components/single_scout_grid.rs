@@ -2,13 +2,18 @@
 
 use yew::prelude::*;
 
-/// Scout colors (colorblind-friendly)
-const SCOUT_COLORS: [&str; 5] = [
-    "#2196F3", // Blue
+/// Scout colors (colorblind-friendly, 10 colors for up to 10 scouts)
+const SCOUT_COLORS: [&str; 10] = [
+    "#2196F3", // Blue (Random scout)
     "#4CAF50", // Green
     "#FF9800", // Orange
     "#9C27B0", // Purple
     "#F44336", // Red
+    "#00BCD4", // Cyan
+    "#E91E63", // Pink
+    "#8BC34A", // Light Green
+    "#FF5722", // Deep Orange
+    "#607D8B", // Blue Grey
 ];
 
 /// Action arrows
@@ -27,14 +32,17 @@ pub struct SingleScoutGridProps {
     pub visited_cells: Vec<Vec<f64>>,  // Per-scout visited cells
     pub policy: Vec<Vec<i32>>,
     pub policy_received: bool,
+    #[prop_or(5)]
+    pub n_scouts: i32,  // Total number of scouts (for sizing)
 }
 
 #[function_component(SingleScoutGrid)]
 pub fn single_scout_grid(props: &SingleScoutGridProps) -> Html {
     let grid_size = props.grid_size as usize;
-    let cell_size = 40;  // Smaller cells to fit 5 grids
+    // Dynamic cell size: smaller when more scouts need to fit
+    let cell_size = if props.n_scouts > 5 { 30 } else { 40 };
     let svg_size = grid_size * cell_size;
-    let scout_color = SCOUT_COLORS.get(props.scout_index % 5).unwrap_or(&"#888");
+    let scout_color = SCOUT_COLORS.get(props.scout_index % 10).unwrap_or(&"#888");
 
     // Normalize visit counts for opacity
     let max_visits: f64 = props
