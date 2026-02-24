@@ -3,7 +3,7 @@
 use std::rc::Rc;
 use yew::prelude::*;
 
-use crate::components::{Controls, GridPanel, LearningChart, Metrics, ScoutLegend, ReplayControls};
+use crate::components::{Controls, GridPanel, LearningChart, Metrics, ReplayControls};
 use crate::services::{use_websocket, WsState};
 use crate::types::{AppState, ClientCommand, ServerEvent, ScoutInfo, TrainingHistory, RecordedEvent, RecordedEventType};
 

@@ -137,10 +137,13 @@ uv pip install -e ".[web]"
 
 A real-time web interface for visualizing multi-scout training:
 
-- **Live Grid**: Watch scouts explore the grid world
+![Web Visualization](images/screenshot.png?ts=1771975087772)
+
+- **Live Grid**: Watch scouts explore the grid world with policy arrows
 - **Training Controls**: Start/pause/stop with adjustable speed
-- **Metrics Panel**: Live success rate and loss tracking
+- **Metrics Panel**: Live success rate and episode tracking
 - **Learning Curves**: Animated training progress charts
+- **Replay Mode**: Step through recorded training at adjustable speed (0.1x - 10x)
 
 ```bash
 ./scripts/serve.sh   # Builds frontend and serves on http://localhost:3200
