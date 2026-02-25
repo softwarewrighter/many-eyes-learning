@@ -96,58 +96,53 @@ impl Scout {
             if row >= 0 && col >= 0 {
                 if let Some(row_q) = q_table.get(row as usize) {
                     if let Some(q_vals) = row_q.get(col as usize) {
-                        // Find max Q-value
-                        let max_q = q_vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+                        if self.random_tie_breaking {
+                            // Per-scout biased action selection
+                            // Each scout adds a directional bias to Q-values
+                            let bias_strength = 0.3;  // How much to bias preferred directions
+                            let mut biased_q = *q_vals;
 
-                        // Collect best actions - threshold depends on mode
-                        let best_actions: Vec<i32> = if self.random_tie_breaking {
-                            // Soft threshold: actions within 10% of max are considered "tied"
-                            let threshold = if max_q.abs() < 0.01 {
-                                0.01  // For near-zero Q-values, use absolute threshold
-                            } else {
-                                max_q.abs() * 0.1  // 10% relative threshold
-                            };
-                            q_vals
-                                .iter()
-                                .enumerate()
-                                .filter(|(_, &q)| max_q - q < threshold)
-                                .map(|(i, _)| i as i32)
-                                .collect()
-                        } else {
-                            // Exact match for deterministic mode
-                            q_vals
-                                .iter()
-                                .enumerate()
-                                .filter(|(_, &q)| (q - max_q).abs() < 1e-9)
-                                .map(|(i, _)| i as i32)
-                                .collect()
-                        };
-
-                        if !best_actions.is_empty() {
-                            if self.random_tie_breaking {
-                                // Per-scout tie-breaking strategy based on scout index
-                                // Creates visually distinct paths for each scout
-                                let action = match self.index % 5 {
-                                    0 => best_actions[0],  // Scout 0: first (up-biased) - but scout 0 is random anyway
-                                    1 => *best_actions.last().unwrap(),  // Scout 1: last (left-biased)
-                                    2 => {  // Scout 2: prefer horizontal (right=1, left=3)
-                                        best_actions.iter().find(|&&a| a == 1 || a == 3)
-                                            .copied().unwrap_or(best_actions[0])
-                                    }
-                                    3 => {  // Scout 3: prefer vertical (up=0, down=2)
-                                        best_actions.iter().find(|&&a| a == 0 || a == 2)
-                                            .copied().unwrap_or(best_actions[0])
-                                    }
-                                    _ => {  // Scout 4+: random selection
-                                        let idx = self.rng.gen_range(0..best_actions.len());
-                                        best_actions[idx]
-                                    }
-                                };
-                                return action;
-                            } else {
-                                // Deterministic tie-breaking: pick first (lowest index)
-                                return best_actions[0];
+                            match self.index % 5 {
+                                0 => {}  // Scout 0 is always random anyway
+                                1 => {
+                                    // Scout 1: prefer right (action 1), then down (action 2)
+                                    biased_q[1] += bias_strength;
+                                    biased_q[2] += bias_strength * 0.5;
+                                }
+                                2 => {
+                                    // Scout 2: prefer down (action 2), then right (action 1)
+                                    biased_q[2] += bias_strength;
+                                    biased_q[1] += bias_strength * 0.5;
+                                }
+                                3 => {
+                                    // Scout 3: prefer down (action 2), then left (action 3)
+                                    biased_q[2] += bias_strength;
+                                    biased_q[3] += bias_strength * 0.3;
+                                }
+                                _ => {
+                                    // Scout 4+: prefer right (action 1), slight up bias (action 0)
+                                    biased_q[1] += bias_strength;
+                                    biased_q[0] += bias_strength * 0.3;
+                                }
                             }
+
+                            // Select action with highest biased Q-value
+                            let best_action = biased_q
+                                .iter()
+                                .enumerate()
+                                .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+                                .map(|(i, _)| i as i32)
+                                .unwrap_or(0);
+                            return best_action;
+                        } else {
+                            // Deterministic: pick action with highest Q-value (first on tie)
+                            let best_action = q_vals
+                                .iter()
+                                .enumerate()
+                                .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+                                .map(|(i, _)| i as i32)
+                                .unwrap_or(0);
+                            return best_action;
                         }
                     }
                 }
