@@ -4,23 +4,54 @@ Real-time visualization of multi-scout reinforcement learning training.
 
 **Stack:** Rust + Yew/WASM (frontend) + Axum (backend)
 
+## Prerequisites
+
+```bash
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Add WebAssembly target
+rustup target add wasm32-unknown-unknown
+
+# Install trunk (Yew build tool)
+cargo install trunk wasm-bindgen-cli
+```
+
 ## Quick Start
 
 ```bash
-# Build and run on http://localhost:3200
+# From repo root - builds frontend and starts server on http://localhost:3200
 ./scripts/serve.sh
 ```
 
-## Development
+## Manual Build & Run
 
 ```bash
-# Install dependencies
-cargo install trunk wasm-bindgen-cli
+# 1. Build frontend (WASM)
+cd web/frontend
+trunk build --release
+# Output: web/frontend/dist/
 
-# Development mode (hot reload)
+# 2. Build and run backend
+cd web/backend
+cargo build --release
+./target/release/many-eyes-server
+# Server runs on http://localhost:3200, serves frontend from ../frontend/dist/
+```
+
+## Development Mode
+
+```bash
+# Hot reload for frontend development
 ./scripts/dev.sh
-# Frontend: http://localhost:8080
-# Backend:  http://localhost:3200
+
+# Or manually:
+# Terminal 1 - Backend
+cd web/backend && cargo run
+
+# Terminal 2 - Frontend with hot reload
+cd web/frontend && trunk serve --proxy-backend=http://localhost:3200/ws
+# Frontend: http://localhost:8080 (proxies WebSocket to backend)
 ```
 
 ## Architecture
@@ -49,8 +80,12 @@ cargo install trunk wasm-bindgen-cli
 - **Multiple Scouts**: Visualize 1-5 scouts with different exploration strategies
 - **Training Controls**: Start/pause/stop with adjustable speed
 - **Metrics Panel**: Live success rate and episode tracking
-- **Learning Curves**: Canvas-based chart of training progress
+- **Learning Curves**: Canvas-based chart of training progress (high-DPI aware)
 - **Policy Visualization**: Arrow overlay showing learned policy
+- **Replay Mode**: Step through recorded training at adjustable speed (0.1x - 10x)
+  - Play/Pause/Step controls
+  - Timeline scrubber for seeking
+  - Speed adjustment slider
 
 ## WebSocket Protocol
 

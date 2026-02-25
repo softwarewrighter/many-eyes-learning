@@ -151,11 +151,19 @@ A real-time web interface for visualizing multi-scout training:
 - **Learning Curves**: Animated training progress charts
 - **Replay Mode**: Step through recorded training at adjustable speed (0.1x - 10x)
 
+**Prerequisites:** Rust, `wasm32-unknown-unknown` target, trunk
+
 ```bash
-./scripts/serve.sh   # Builds frontend and serves on http://localhost:3200
+# Install prerequisites (one-time)
+rustup target add wasm32-unknown-unknown
+cargo install trunk
+
+# Build and run
+./scripts/serve.sh
+# Open http://localhost:3200
 ```
 
-See [web/README.md](web/README.md) for details.
+See [web/README.md](web/README.md) for manual build steps and development mode.
 
 ---
 
