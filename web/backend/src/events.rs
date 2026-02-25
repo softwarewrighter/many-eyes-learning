@@ -2,6 +2,21 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Exploration mode determines how scouts explore the environment
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ExplorationMode {
+    /// All scouts follow the same learned policy (deterministic argmax)
+    #[default]
+    SharedPolicy,
+    /// Each scout has directional biases for diverse path exploration
+    DiversePaths,
+    /// All scouts maintain high exploration (epsilon stays at 0.5)
+    HighExploration,
+    /// Scouts use Boltzmann (softmax) action selection with temperature
+    Boltzmann,
+}
+
 /// Client -> Server commands
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "command")]
@@ -29,7 +44,7 @@ pub struct TrainingConfig {
     pub with_obstacles: bool,
     pub seed: Option<u64>,
     #[serde(default)]
-    pub random_tie_breaking: bool,  // Random vs deterministic tie-breaking for equal Q-values
+    pub exploration_mode: ExplorationMode,
 }
 
 impl Default for TrainingConfig {
@@ -41,7 +56,7 @@ impl Default for TrainingConfig {
             steps_per_episode: 100,
             with_obstacles: false,
             seed: None,
-            random_tie_breaking: false,
+            exploration_mode: ExplorationMode::SharedPolicy,
         }
     }
 }

@@ -2,6 +2,21 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Exploration mode determines how scouts explore the environment
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ExplorationMode {
+    /// All scouts follow the same learned policy (deterministic argmax)
+    #[default]
+    SharedPolicy,
+    /// Each scout has directional biases for diverse path exploration
+    DiversePaths,
+    /// All scouts maintain high exploration (epsilon stays at 0.5)
+    HighExploration,
+    /// Scouts use Boltzmann (softmax) action selection with temperature
+    Boltzmann,
+}
+
 /// Data for a single scout move in batch events
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)] // Fields are part of the WebSocket protocol
@@ -125,7 +140,7 @@ pub struct TrainingConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub seed: Option<i32>,
     #[serde(default)]
-    pub random_tie_breaking: bool,  // Random vs deterministic tie-breaking for equal Q-values
+    pub exploration_mode: ExplorationMode,
 }
 
 /// Scout info for display

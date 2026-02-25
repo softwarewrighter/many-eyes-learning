@@ -339,9 +339,48 @@ Scout 0 is always random (ε=1.0, never decays):
 
 The random scout (always ~70 steps) adds variance to the average, preventing it from reaching the theoretical optimal of 8 steps (Manhattan distance for 5×5 grid).
 
-### Why Do All Scouts Follow the Same Path?
+### Exploration Modes
 
-You may notice that despite multiple equivalent optimal paths existing (any sequence of 4 rights and 4 downs in a 5×5 grid), all learning scouts converge to the **same** path. This happens due to two design choices:
+The UI provides a dropdown to select different exploration strategies. Each mode produces measurably different heatmap patterns:
+
+| Mode | JS Divergence | Heatmap Diversity | Learning Performance |
+|------|---------------|-------------------|---------------------|
+| **Shared Policy** | 0.038 | Low (identical) | **Best** (lowest avg steps) |
+| **Diverse Paths** | 0.406 | High (distinct) | Worse (biases override optimal) |
+| **High Exploration** | Moderate | High | Worst (never fully exploits) |
+| **Boltzmann** | Low-Moderate | Moderate | Moderate |
+
+**Jensen-Shannon Divergence** measures how different the heatmaps are between scouts. Higher values = more diverse exploration patterns.
+
+#### The Diversity vs Performance Trade-off
+
+There is a fundamental trade-off between visual diversity and learning performance:
+
+- **Shared Policy wins on performance**: The "many eyes" benefit comes from diverse *exploration during learning* (finding the goal faster), but once Q-values converge, all scouts should follow the *same optimal policy*.
+
+- **Diverse Paths sacrifices performance for visuals**: The current implementation applies directional biases even during greedy action selection, meaning Scout 1 prefers going right even when down is optimal. This creates visually interesting heatmaps but suboptimal behavior.
+
+- **High Exploration never converges**: Fixed 50% random actions means scouts never fully exploit the learned policy.
+
+**Key insight**: For best learning, use **Shared Policy**. Use other modes to visualize how different exploration strategies affect the learning process, but expect higher average steps.
+
+#### Diverse Paths Mode Details
+
+Each scout has a directional bias during both random exploration and greedy action selection:
+
+| Scout | Bias | Behavior |
+|-------|------|----------|
+| Scout 0 | None | Always random (baseline) |
+| Scout 1 | Right-heavy | 50% right, 25% down during exploration |
+| Scout 2 | Down-heavy | 50% down, 25% right during exploration |
+| Scout 3 | Down-left | Unusual diagonal path |
+| Scout 4+ | Alternating | Right/down based on grid position |
+
+This produces visually distinct heatmaps while maintaining the shared Q-table for collective learning.
+
+### Why Do All Scouts Follow the Same Path in Shared Policy Mode?
+
+In **Shared Policy** mode, scouts converge to identical paths due to:
 
 **1. Shared Q-Table (Intentional)**
 
@@ -350,23 +389,14 @@ All scouts contribute experiences to a single Q-table. This is the core "many ey
 - Scouts benefit from each other's discoveries
 - Trade-off: Policy diversity is sacrificed for learning speed
 
-**2. Deterministic Tie-Breaking (Artifact)**
+**2. Deterministic Tie-Breaking**
 
 When extracting the greedy policy, `argmax` over equal Q-values returns the first action:
 - Actions are ordered: 0=up, 1=right, 2=down, 3=left
 - Early training has many ties (Q-values start at 0)
 - Result: Systematic bias toward "up-first" then "right-first"
 
-**Possible Improvements**:
-
-| Approach | Diversity | Shared Learning |
-|----------|-----------|-----------------|
-| Random tie-breaking | Moderate | Yes |
-| Per-scout action bias | High | Yes |
-| Separate Q-tables | Maximum | No (defeats purpose) |
-| Boltzmann exploration | Moderate | Yes |
-
-The implementation uses **soft tie-breaking**: when "Diverse Paths" is enabled, actions within 10% of the maximum Q-value are considered "tied" and one is chosen randomly. This creates visible path diversity throughout training, not just during initialization when Q-values are exactly equal.
+Use **Diverse Paths** mode to see different exploration patterns per scout.
 
 ### Key Features
 
@@ -376,3 +406,4 @@ The implementation uses **soft tie-breaking**: when "Diverse Paths" is enabled, 
 4. **Speed Control**: 1x to 100x training speed
 5. **Replay Mode**: Step through recorded training at any speed
 6. **Dynamic Scouts**: 1-10 scouts with adaptive two-row layout
+7. **Exploration Modes**: Dropdown to select Shared Policy, Diverse Paths, High Exploration, or Boltzmann

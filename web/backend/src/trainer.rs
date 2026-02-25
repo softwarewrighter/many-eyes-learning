@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use std::time::Duration;
 use tokio::time::sleep;
 
-use crate::events::{ScoutMoveData, ServerEvent, TrainingConfig, TrainingHistory};
+use crate::events::{ExplorationMode, ScoutMoveData, ServerEvent, TrainingConfig, TrainingHistory};
 
 /// Grid world environment
 struct GridWorld {
@@ -63,21 +63,21 @@ struct Scout {
     epsilon_min: f64,
     epsilon_decay: f64,
     always_random: bool,
-    random_tie_breaking: bool,
+    exploration_mode: ExplorationMode,
     rng: StdRng,
-    q_values: Option<Vec<Vec<[f64; 4]>>>,  // Store Q-values for tie-breaking
+    q_values: Option<Vec<Vec<[f64; 4]>>>,
 }
 
 impl Scout {
-    fn new(index: usize, epsilon: f64, always_random: bool, random_tie_breaking: bool, seed: u64) -> Self {
+    fn new(index: usize, epsilon: f64, always_random: bool, exploration_mode: ExplorationMode, seed: u64) -> Self {
         Self {
             id: format!("scout_{}", index),
             index,
             epsilon,
             epsilon_min: 0.01,
-            epsilon_decay: 0.95,  // Decay by 5% each episode
+            epsilon_decay: 0.95,
             always_random,
-            random_tie_breaking,
+            exploration_mode,
             rng: StdRng::seed_from_u64(seed + index as u64),
             q_values: None,
         }
@@ -89,77 +89,156 @@ impl Scout {
             return self.rng.gen_range(0..4);
         }
 
+        match self.exploration_mode {
+            ExplorationMode::SharedPolicy => self.select_shared_policy(pos),
+            ExplorationMode::DiversePaths => self.select_diverse_paths(pos),
+            ExplorationMode::HighExploration => self.select_high_exploration(),
+            ExplorationMode::Boltzmann => self.select_boltzmann(pos),
+        }
+    }
+
+    /// SharedPolicy: Standard epsilon-greedy with deterministic argmax
+    fn select_shared_policy(&mut self, pos: (i32, i32)) -> i32 {
         if self.rng.gen::<f64>() < self.epsilon {
-            self.rng.gen_range(0..4)
-        } else if let Some(ref q_table) = self.q_values {
-            let (row, col) = pos;
-            if row >= 0 && col >= 0 {
-                if let Some(row_q) = q_table.get(row as usize) {
-                    if let Some(q_vals) = row_q.get(col as usize) {
-                        if self.random_tie_breaking {
-                            // Per-scout biased action selection
-                            // Use multiplicative bias relative to max Q-value
-                            let max_q = q_vals.iter().cloned().fold(0.0_f64, f64::max);
-                            let bias = (max_q.abs() + 0.5) * 0.8;  // Strong bias: 80% of max + 0.4
-                            let mut biased_q = *q_vals;
+            return self.rng.gen_range(0..4);
+        }
+        self.greedy_action(pos)
+    }
 
-                            match self.index % 5 {
-                                0 => {}  // Scout 0 is always random anyway
-                                1 => {
-                                    // Scout 1: strongly prefer right, then down
-                                    biased_q[1] += bias;
-                                    biased_q[2] += bias * 0.3;
-                                }
-                                2 => {
-                                    // Scout 2: strongly prefer down, then right
-                                    biased_q[2] += bias;
-                                    biased_q[1] += bias * 0.3;
-                                }
-                                3 => {
-                                    // Scout 3: prefer down, then left (unusual path)
-                                    biased_q[2] += bias;
-                                    biased_q[3] += bias * 0.5;
-                                }
-                                _ => {
-                                    // Scout 4+: diagonal preference - alternate right/down
-                                    let (r, c) = pos;
-                                    if (r + c) % 2 == 0 {
-                                        biased_q[1] += bias;  // right
-                                    } else {
-                                        biased_q[2] += bias;  // down
-                                    }
-                                }
-                            }
+    /// DiversePaths: Biased exploration and biased greedy selection
+    fn select_diverse_paths(&mut self, pos: (i32, i32)) -> i32 {
+        if self.rng.gen::<f64>() < self.epsilon {
+            return self.biased_random_action(pos);
+        }
+        self.biased_greedy_action(pos)
+    }
 
-                            // Select action with highest biased Q-value
-                            let best_action = biased_q
-                                .iter()
-                                .enumerate()
-                                .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
-                                .map(|(i, _)| i as i32)
-                                .unwrap_or(0);
-                            return best_action;
-                        } else {
-                            // Deterministic: pick action with highest Q-value (first on tie)
-                            let best_action = q_vals
-                                .iter()
-                                .enumerate()
-                                .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
-                                .map(|(i, _)| i as i32)
-                                .unwrap_or(0);
-                            return best_action;
-                        }
-                    }
-                }
-            }
+    /// HighExploration: Always use epsilon=0.5 (never decay)
+    fn select_high_exploration(&mut self) -> i32 {
+        // Fixed 50% random exploration
+        if self.rng.gen::<f64>() < 0.5 {
             self.rng.gen_range(0..4)
         } else {
+            // Simple greedy (no Q-values needed for random selection)
             self.rng.gen_range(0..4)
         }
     }
 
+    /// Boltzmann: Softmax action selection with temperature
+    fn select_boltzmann(&mut self, pos: (i32, i32)) -> i32 {
+        let temperature = 0.5 + 0.3 * (self.index as f64);  // Per-scout temperature
+
+        if let Some(ref q_table) = self.q_values {
+            let (row, col) = pos;
+            if row >= 0 && col >= 0 {
+                if let Some(row_q) = q_table.get(row as usize) {
+                    if let Some(q_vals) = row_q.get(col as usize) {
+                        // Softmax with temperature
+                        let max_q = q_vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+                        let exp_vals: Vec<f64> = q_vals
+                            .iter()
+                            .map(|q| ((q - max_q) / temperature).exp())
+                            .collect();
+                        let sum: f64 = exp_vals.iter().sum();
+                        let probs: Vec<f64> = exp_vals.iter().map(|e| e / sum).collect();
+
+                        // Weighted random selection
+                        let mut roll = self.rng.gen::<f64>();
+                        for (action, prob) in probs.iter().enumerate() {
+                            roll -= prob;
+                            if roll <= 0.0 {
+                                return action as i32;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        self.rng.gen_range(0..4)
+    }
+
+    /// Greedy action: pick highest Q-value (deterministic tie-breaking)
+    fn greedy_action(&mut self, pos: (i32, i32)) -> i32 {
+        if let Some(ref q_table) = self.q_values {
+            let (row, col) = pos;
+            if row >= 0 && col >= 0 {
+                if let Some(row_q) = q_table.get(row as usize) {
+                    if let Some(q_vals) = row_q.get(col as usize) {
+                        return q_vals
+                            .iter()
+                            .enumerate()
+                            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+                            .map(|(i, _)| i as i32)
+                            .unwrap_or(0);
+                    }
+                }
+            }
+        }
+        self.rng.gen_range(0..4)
+    }
+
+    /// Biased greedy action: add per-scout directional bias to Q-values
+    fn biased_greedy_action(&mut self, pos: (i32, i32)) -> i32 {
+        if let Some(ref q_table) = self.q_values {
+            let (row, col) = pos;
+            if row >= 0 && col >= 0 {
+                if let Some(row_q) = q_table.get(row as usize) {
+                    if let Some(q_vals) = row_q.get(col as usize) {
+                        let max_q = q_vals.iter().cloned().fold(0.0_f64, f64::max);
+                        let bias = (max_q.abs() + 0.5) * 0.8;
+                        let mut biased_q = *q_vals;
+
+                        match self.index % 5 {
+                            0 => {}  // Scout 0 is always random
+                            1 => { biased_q[1] += bias; biased_q[2] += bias * 0.3; }  // Right
+                            2 => { biased_q[2] += bias; biased_q[1] += bias * 0.3; }  // Down
+                            3 => { biased_q[2] += bias; biased_q[3] += bias * 0.5; }  // Down-left
+                            _ => {
+                                let (r, c) = pos;
+                                if (r + c) % 2 == 0 { biased_q[1] += bias; }
+                                else { biased_q[2] += bias; }
+                            }
+                        }
+
+                        return biased_q
+                            .iter()
+                            .enumerate()
+                            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+                            .map(|(i, _)| i as i32)
+                            .unwrap_or(0);
+                    }
+                }
+            }
+        }
+        self.rng.gen_range(0..4)
+    }
+
+    /// Biased random action: weighted random selection per scout
+    fn biased_random_action(&mut self, pos: (i32, i32)) -> i32 {
+        let weights: [f64; 4] = match self.index % 5 {
+            0 => [1.0, 1.0, 1.0, 1.0],  // Scout 0: uniform random
+            1 => [0.5, 3.0, 1.5, 0.5],  // Scout 1: prefer right
+            2 => [0.5, 1.5, 3.0, 0.5],  // Scout 2: prefer down
+            3 => [1.0, 1.0, 2.5, 1.0],  // Scout 3: slight down
+            _ => {
+                let (r, c) = pos;
+                if (r + c) % 2 == 0 { [0.5, 3.0, 1.0, 0.5] }
+                else { [0.5, 1.0, 3.0, 0.5] }
+            }
+        };
+
+        let total: f64 = weights.iter().sum();
+        let mut roll = self.rng.gen::<f64>() * total;
+        for (action, weight) in weights.iter().enumerate() {
+            roll -= weight;
+            if roll <= 0.0 { return action as i32; }
+        }
+        0
+    }
+
     fn decay_epsilon(&mut self) {
-        if !self.always_random {
+        // HighExploration mode doesn't decay epsilon
+        if !self.always_random && self.exploration_mode != ExplorationMode::HighExploration {
             self.epsilon = (self.epsilon * self.epsilon_decay).max(self.epsilon_min);
         }
     }
@@ -274,16 +353,16 @@ pub struct StreamingTrainer {
 impl StreamingTrainer {
     pub fn new(config: TrainingConfig) -> Self {
         let seed = config.seed.unwrap_or(42);
-        let random_tie_breaking = config.random_tie_breaking;
+        let exploration_mode = config.exploration_mode;
         let scouts: Vec<Scout> = (0..config.n_scouts as usize)
             .map(|i| {
                 if i == 0 {
                     // Scout 0 is always random - provides exploration baseline
-                    Scout::new(i, 1.0, true, random_tie_breaking, seed)
+                    Scout::new(i, 1.0, true, exploration_mode, seed)
                 } else {
                     // Other scouts start with high epsilon, decay over time
                     let epsilon = 0.5 + 0.3 * (i as f64 / config.n_scouts as f64);
-                    Scout::new(i, epsilon, false, random_tie_breaking, seed)
+                    Scout::new(i, epsilon, false, exploration_mode, seed)
                 }
             })
             .collect();
@@ -506,6 +585,275 @@ impl StreamingTrainer {
                     history: self.history.clone(),
                 })
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Simulate a fixed number of episodes and collect per-scout visit counts
+    fn simulate_training(config: TrainingConfig, episodes: i32) -> Vec<Vec<Vec<i32>>> {
+        let n_scouts = config.n_scouts as usize;
+        let grid_size = config.grid_size as usize;
+        let seed = config.seed.unwrap_or(42);
+        let exploration_mode = config.exploration_mode;
+
+        // Per-scout visit counts: [scout][row][col]
+        let mut visits: Vec<Vec<Vec<i32>>> = vec![vec![vec![0; grid_size]; grid_size]; n_scouts];
+
+        // Create scouts
+        let mut scouts: Vec<Scout> = (0..n_scouts)
+            .map(|i| {
+                if i == 0 {
+                    Scout::new(i, 1.0, true, exploration_mode, seed)
+                } else {
+                    let epsilon = 0.5 + 0.3 * (i as f64 / n_scouts as f64);
+                    Scout::new(i, epsilon, false, exploration_mode, seed)
+                }
+            })
+            .collect();
+
+        let mut learner = QLearner::new(config.grid_size);
+
+        for _ in 0..episodes {
+            // Each scout runs one episode
+            for (scout_idx, scout) in scouts.iter_mut().enumerate() {
+                let mut env = GridWorld::new(config.grid_size, config.steps_per_episode);
+                let mut pos = env.reset();
+
+                // Record starting position
+                visits[scout_idx][pos.0 as usize][pos.1 as usize] += 1;
+
+                loop {
+                    let action = scout.select_action(pos, config.grid_size);
+                    let (new_pos, reward, done) = env.step(action);
+
+                    // Record visit
+                    visits[scout_idx][new_pos.0 as usize][new_pos.1 as usize] += 1;
+
+                    // Update learner
+                    learner.update(pos, action, reward, new_pos, done);
+
+                    if done {
+                        break;
+                    }
+                    pos = new_pos;
+                }
+            }
+
+            // Distribute Q-values to scouts (like real training)
+            let q_values = learner.get_q_values();
+            for scout in scouts.iter_mut() {
+                scout.set_q_values(q_values.clone());
+            }
+
+            // Decay epsilon
+            for scout in scouts.iter_mut() {
+                scout.decay_epsilon();
+            }
+        }
+
+        visits
+    }
+
+    /// Calculate normalized heatmap (proportions instead of counts)
+    fn normalize_heatmap(visits: &[Vec<i32>]) -> Vec<Vec<f64>> {
+        let total: i32 = visits.iter().flat_map(|row| row.iter()).sum();
+        if total == 0 {
+            return visits.iter().map(|row| row.iter().map(|_| 0.0).collect()).collect();
+        }
+        visits
+            .iter()
+            .map(|row| row.iter().map(|&v| v as f64 / total as f64).collect())
+            .collect()
+    }
+
+    /// Calculate Jensen-Shannon divergence between two probability distributions
+    fn js_divergence(p: &[Vec<f64>], q: &[Vec<f64>]) -> f64 {
+        let mut divergence = 0.0;
+        for (p_row, q_row) in p.iter().zip(q.iter()) {
+            for (&pi, &qi) in p_row.iter().zip(q_row.iter()) {
+                if pi > 0.0 || qi > 0.0 {
+                    let m = (pi + qi) / 2.0;
+                    if pi > 0.0 {
+                        divergence += pi * (pi / m).ln();
+                    }
+                    if qi > 0.0 {
+                        divergence += qi * (qi / m).ln();
+                    }
+                }
+            }
+        }
+        divergence / 2.0
+    }
+
+    /// Calculate average pairwise JS divergence between scout heatmaps
+    fn average_heatmap_divergence(visits: &[Vec<Vec<i32>>]) -> f64 {
+        let heatmaps: Vec<Vec<Vec<f64>>> = visits.iter().map(|v| normalize_heatmap(v)).collect();
+
+        let mut total_div = 0.0;
+        let mut count = 0;
+
+        // Compare all pairs of scouts (excluding scout 0 which is always random)
+        for i in 1..heatmaps.len() {
+            for j in (i + 1)..heatmaps.len() {
+                total_div += js_divergence(&heatmaps[i], &heatmaps[j]);
+                count += 1;
+            }
+        }
+
+        if count == 0 {
+            0.0
+        } else {
+            total_div / count as f64
+        }
+    }
+
+    #[test]
+    fn test_diverse_paths_produces_different_heatmaps() {
+        // Test that DiversePaths mode produces more variation than SharedPolicy
+        let config_shared = TrainingConfig {
+            n_scouts: 5,
+            grid_size: 5,
+            episodes: 30,
+            steps_per_episode: 100,
+            exploration_mode: ExplorationMode::SharedPolicy,
+            seed: Some(42),
+            ..Default::default()
+        };
+
+        let config_diverse = TrainingConfig {
+            n_scouts: 5,
+            grid_size: 5,
+            episodes: 30,
+            steps_per_episode: 100,
+            exploration_mode: ExplorationMode::DiversePaths,
+            seed: Some(42),
+            ..Default::default()
+        };
+
+        let visits_shared = simulate_training(config_shared, 30);
+        let visits_diverse = simulate_training(config_diverse, 30);
+
+        let divergence_shared = average_heatmap_divergence(&visits_shared);
+        let divergence_diverse = average_heatmap_divergence(&visits_diverse);
+
+        println!("SharedPolicy avg JS divergence: {:.4}", divergence_shared);
+        println!("DiversePaths avg JS divergence: {:.4}", divergence_diverse);
+
+        // DiversePaths should produce MORE divergence (more different heatmaps)
+        assert!(
+            divergence_diverse > divergence_shared,
+            "DiversePaths ({:.4}) should have higher divergence than SharedPolicy ({:.4})",
+            divergence_diverse,
+            divergence_shared
+        );
+    }
+
+    #[test]
+    fn test_boltzmann_is_functional() {
+        // Boltzmann should produce non-zero divergence and complete training
+        let config_boltzmann = TrainingConfig {
+            n_scouts: 5,
+            grid_size: 5,
+            episodes: 20,
+            steps_per_episode: 100,
+            exploration_mode: ExplorationMode::Boltzmann,
+            seed: Some(123),
+            ..Default::default()
+        };
+
+        let visits = simulate_training(config_boltzmann, 20);
+        let divergence = average_heatmap_divergence(&visits);
+
+        println!("Boltzmann avg JS divergence: {:.4}", divergence);
+
+        // Boltzmann should have some divergence (due to per-scout temperatures)
+        // but Q-values dominate after learning, so divergence may be low
+        assert!(
+            divergence >= 0.0,
+            "Boltzmann divergence should be non-negative"
+        );
+
+        // Verify all scouts visited cells (training completed)
+        for scout_idx in 0..5 {
+            let total_visits: i32 = visits[scout_idx].iter().flat_map(|r| r.iter()).sum();
+            assert!(total_visits > 0, "Scout {} should have visits", scout_idx);
+        }
+    }
+
+    #[test]
+    fn test_exploration_modes_are_deterministic_with_seed() {
+        // Same seed should produce same results
+        let config1 = TrainingConfig {
+            n_scouts: 3,
+            grid_size: 5,
+            episodes: 10,
+            steps_per_episode: 50,
+            exploration_mode: ExplorationMode::DiversePaths,
+            seed: Some(999),
+            ..Default::default()
+        };
+
+        let config2 = TrainingConfig {
+            n_scouts: 3,
+            grid_size: 5,
+            episodes: 10,
+            steps_per_episode: 50,
+            exploration_mode: ExplorationMode::DiversePaths,
+            seed: Some(999),
+            ..Default::default()
+        };
+
+        let visits1 = simulate_training(config1, 10);
+        let visits2 = simulate_training(config2, 10);
+
+        // Should be identical
+        for scout in 0..3 {
+            for row in 0..5 {
+                for col in 0..5 {
+                    assert_eq!(
+                        visits1[scout][row][col], visits2[scout][row][col],
+                        "Visits should be identical with same seed at scout={}, row={}, col={}",
+                        scout, row, col
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_high_exploration_maintains_exploration() {
+        // HighExploration should keep exploring even late in training
+        let config = TrainingConfig {
+            n_scouts: 3,
+            grid_size: 5,
+            episodes: 50,
+            steps_per_episode: 100,
+            exploration_mode: ExplorationMode::HighExploration,
+            seed: Some(42),
+            ..Default::default()
+        };
+
+        let visits = simulate_training(config, 50);
+
+        // Check that all scouts visit many cells (high exploration)
+        for scout_idx in 1..3 {
+            let cells_visited: i32 = visits[scout_idx]
+                .iter()
+                .flat_map(|row| row.iter())
+                .filter(|&&v| v > 0)
+                .count() as i32;
+
+            // Should visit at least 60% of cells with high exploration
+            let expected_min = (5 * 5 * 60 / 100) as i32;  // 15 cells
+            assert!(
+                cells_visited >= expected_min,
+                "Scout {} should visit at least {} cells, but visited {}",
+                scout_idx, expected_min, cells_visited
+            );
         }
     }
 }

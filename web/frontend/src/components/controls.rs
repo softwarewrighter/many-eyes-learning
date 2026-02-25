@@ -1,9 +1,9 @@
 //! Training controls component.
 
 use yew::prelude::*;
-use web_sys::HtmlInputElement;
+use web_sys::{HtmlInputElement, HtmlSelectElement};
 
-use crate::types::{ClientCommand, TrainingConfig};
+use crate::types::{ClientCommand, ExplorationMode, TrainingConfig};
 use crate::services::WsState;
 
 #[derive(Properties, PartialEq)]
@@ -21,7 +21,7 @@ pub fn controls(props: &ControlsProps) -> Html {
     let grid_size = use_state(|| 5i32);
     let episodes = use_state(|| 50i32);
     let speed = use_state(|| 1.0f64);
-    let random_tie_breaking = use_state(|| false);
+    let exploration_mode = use_state(|| ExplorationMode::SharedPolicy);
 
     let on_connect = {
         let on_connect = props.on_connect.clone();
@@ -33,7 +33,7 @@ pub fn controls(props: &ControlsProps) -> Html {
         let n_scouts = *n_scouts;
         let grid_size = *grid_size;
         let episodes = *episodes;
-        let random_tie_breaking = *random_tie_breaking;
+        let exploration_mode = *exploration_mode;
         Callback::from(move |_| {
             on_command.emit(ClientCommand::Start {
                 config: TrainingConfig {
@@ -43,7 +43,7 @@ pub fn controls(props: &ControlsProps) -> Html {
                     steps_per_episode: 100,
                     with_obstacles: false,
                     seed: None,
-                    random_tie_breaking,
+                    exploration_mode,
                 },
             });
         })
@@ -172,23 +172,39 @@ pub fn controls(props: &ControlsProps) -> Html {
                             />
                         </div>
                     </div>
-                    <div class="config-group checkbox-group">
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={*random_tie_breaking}
-                                onchange={Callback::from({
-                                    let random_tie_breaking = random_tie_breaking.clone();
-                                    move |e: Event| {
-                                        if let Some(input) = e.target_dyn_into::<HtmlInputElement>() {
-                                            random_tie_breaking.set(input.checked());
-                                        }
+                    <div class="config-group">
+                        <label>{"Exploration Mode"}</label>
+                        <select
+                            class="exploration-select"
+                            onchange={Callback::from({
+                                let exploration_mode = exploration_mode.clone();
+                                move |e: Event| {
+                                    if let Some(select) = e.target_dyn_into::<HtmlSelectElement>() {
+                                        let mode = match select.value().as_str() {
+                                            "diverse_paths" => ExplorationMode::DiversePaths,
+                                            "high_exploration" => ExplorationMode::HighExploration,
+                                            "boltzmann" => ExplorationMode::Boltzmann,
+                                            _ => ExplorationMode::SharedPolicy,
+                                        };
+                                        exploration_mode.set(mode);
                                     }
-                                })}
-                                disabled={!can_start}
-                            />
-                            {" Diverse Paths (random tie-breaking)"}
-                        </label>
+                                }
+                            })}
+                            disabled={!can_start}
+                        >
+                            <option value="shared_policy" selected={*exploration_mode == ExplorationMode::SharedPolicy}>
+                                {"Shared Policy"}
+                            </option>
+                            <option value="diverse_paths" selected={*exploration_mode == ExplorationMode::DiversePaths}>
+                                {"Diverse Paths"}
+                            </option>
+                            <option value="high_exploration" selected={*exploration_mode == ExplorationMode::HighExploration}>
+                                {"High Exploration"}
+                            </option>
+                            <option value="boltzmann" selected={*exploration_mode == ExplorationMode::Boltzmann}>
+                                {"Boltzmann (Softmax)"}
+                            </option>
+                        </select>
                     </div>
                 }
 
