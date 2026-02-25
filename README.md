@@ -4,7 +4,7 @@
 
 [![Video Explainer](https://img.youtube.com/vi/2KieDPrOl7k/maxresdefault.jpg)](https://www.youtube.com/watch?v=2KieDPrOl7k)
 
-**Video Explainer** - Click the thumbnail above to watch
+[**Video Explainer**](https://www.youtube.com/watch?v=2KieDPrOl7k)
 
 **[Blog Post: Many-Eyes Learning Part 2 - Intrinsic Rewards](https://software-wrighter-lab.github.io/2026/02/24/many-eyes-learning-part2-intrinsic-rewards/)**
 
