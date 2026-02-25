@@ -137,7 +137,7 @@ uv pip install -e ".[web]"
 
 A real-time web interface for visualizing multi-scout training:
 
-![Web Visualization](images/screenshot.png?ts=1771980665229)
+![Web Visualization](images/screenshot.png?ts=1771981529293)
 
 - **Live Grid**: Watch scouts explore the grid world with policy arrows
 - **Training Controls**: Start/pause/stop with adjustable speed
