@@ -172,33 +172,35 @@ The web visualization provides real-time training observation:
 ┌─────────────────────────────────────────┐
 │   http://localhost:3200                 │
 ├─────────────────────────────────────────┤
-│   FastAPI Server                        │
+│   Axum Server (Rust)                    │
 │                                         │
 │   Static Files (Yew/WASM)               │
 │   - Grid visualization                  │
 │   - Training controls                   │
 │   - Metrics panel                       │
 │   - Learning curves                     │
+│   - Replay controls                     │
 │                                         │
 │   API Endpoints                         │
-│   - /ws/train (WebSocket)               │
-│   - /api/experiments (REST)             │
+│   - /ws/train/{client_id} (WebSocket)   │
+│   - /api/health (REST)                  │
 │   - StreamingTrainer                    │
 └─────────────────────────────────────────┘
 ```
 
 ### Web Components
 
-**Backend (FastAPI/Python)**
-- `StreamingTrainer`: Wraps training loop, yields events per step
+**Backend (Axum/Rust)**
+- `StreamingTrainer`: Step-by-step training simulation with Q-learning
 - WebSocket endpoint streams events in real-time
-- REST API for listing/loading saved experiments
+- Static file serving for frontend assets
 
 **Frontend (Yew/WASM/Rust)**
-- Grid component: SVG-based visualization of scouts and policy
-- Controls: Start/pause/stop with speed adjustment
+- Grid component: SVG-based visualization of scouts and policy arrows
+- Controls: Start/pause/stop with adjustable speed
 - Metrics: Live success rate, loss, episode tracking
-- Chart: Canvas-based learning curves
+- Chart: High-DPI canvas-based learning curves
+- Replay: Step through recorded training at adjustable speed (0.1x - 10x)
 
 ### Event Protocol
 
@@ -236,13 +238,15 @@ many-eyes-learning/
 |   |   |-- sparse.py     # Sparse-reward environments
 |-- experiments/          # Reproducible experiments
 |-- web/                  # Web visualization
-|   |-- api/              # FastAPI backend
-|   |   |-- routes/       # REST and WebSocket routes
-|   |   |-- models/       # Pydantic event models
-|   |   |-- services/     # StreamingTrainer
-|   |-- frontend/         # Yew/WASM frontend
+|   |-- backend/          # Axum backend (Rust)
+|   |   |-- src/
+|   |       |-- main.rs      # Server entry point
+|   |       |-- events.rs    # Event types
+|   |       |-- trainer.rs   # Q-learning training simulation
+|   |-- frontend/         # Yew/WASM frontend (Rust)
 |       |-- src/
-|           |-- components/  # UI components
+|           |-- app.rs       # Root component with reducer
+|           |-- components/  # Grid, Controls, Chart, Replay
 |           |-- services/    # WebSocket client
 |           |-- types/       # Event structs
 |-- docs/                 # Documentation
