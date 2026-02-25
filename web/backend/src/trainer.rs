@@ -98,31 +98,36 @@ impl Scout {
                     if let Some(q_vals) = row_q.get(col as usize) {
                         if self.random_tie_breaking {
                             // Per-scout biased action selection
-                            // Each scout adds a directional bias to Q-values
-                            let bias_strength = 0.3;  // How much to bias preferred directions
+                            // Use multiplicative bias relative to max Q-value
+                            let max_q = q_vals.iter().cloned().fold(0.0_f64, f64::max);
+                            let bias = (max_q.abs() + 0.5) * 0.8;  // Strong bias: 80% of max + 0.4
                             let mut biased_q = *q_vals;
 
                             match self.index % 5 {
                                 0 => {}  // Scout 0 is always random anyway
                                 1 => {
-                                    // Scout 1: prefer right (action 1), then down (action 2)
-                                    biased_q[1] += bias_strength;
-                                    biased_q[2] += bias_strength * 0.5;
+                                    // Scout 1: strongly prefer right, then down
+                                    biased_q[1] += bias;
+                                    biased_q[2] += bias * 0.3;
                                 }
                                 2 => {
-                                    // Scout 2: prefer down (action 2), then right (action 1)
-                                    biased_q[2] += bias_strength;
-                                    biased_q[1] += bias_strength * 0.5;
+                                    // Scout 2: strongly prefer down, then right
+                                    biased_q[2] += bias;
+                                    biased_q[1] += bias * 0.3;
                                 }
                                 3 => {
-                                    // Scout 3: prefer down (action 2), then left (action 3)
-                                    biased_q[2] += bias_strength;
-                                    biased_q[3] += bias_strength * 0.3;
+                                    // Scout 3: prefer down, then left (unusual path)
+                                    biased_q[2] += bias;
+                                    biased_q[3] += bias * 0.5;
                                 }
                                 _ => {
-                                    // Scout 4+: prefer right (action 1), slight up bias (action 0)
-                                    biased_q[1] += bias_strength;
-                                    biased_q[0] += bias_strength * 0.3;
+                                    // Scout 4+: diagonal preference - alternate right/down
+                                    let (r, c) = pos;
+                                    if (r + c) % 2 == 0 {
+                                        biased_q[1] += bias;  // right
+                                    } else {
+                                        biased_q[2] += bias;  // down
+                                    }
                                 }
                             }
 
